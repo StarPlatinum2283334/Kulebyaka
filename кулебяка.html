@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анализатор уязвимостей и генератор стойких паролей</title>
+    <style>
+        :root {
+            --neon-red: #ff003c;
+            --neon-green: #00ff47;
+            --neon-dark-red: #cc0030;
+            --dark-bg: #0a0a0a;
+            --darker-bg: #050505;
+            --card-bg: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --success: #00ff47;
+            --warning: #ffaa00;
+            --danger: #ff003c;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+        
+        body {
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.4;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--neon-red);
+            border-radius: 8px;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: var(--neon-red);
+            font-weight: 700;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            border: 1px solid var(--neon-red);
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 12px 20px;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+        
+        .tab.active {
+            color: var(--neon-red);
+            background: rgba(255, 0, 60, 0.1);
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            border: 1px solid var(--neon-red);
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        h2 {
+            color: var(--neon-red);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--neon-red);
+            font-size: 0.8rem;
+        }
+        
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid var(--neon-red);
+            border-radius: 5px;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--neon-green);
+        }
+        
+        button {
+            background: var(--neon-red);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: var(--neon-dark-red);
+        }
+        
+        .password-input-container {
+            position: relative;
+        }
+        
+        .toggle-password {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            width: auto;
+            cursor: pointer;
+            color: var(--neon-red);
+            padding: 4px;
+        }
+        
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+            border-left: 4px solid;
+            background: rgba(10, 10, 10, 0.6);
+        }
+        
+        .result.success {
+            border-color: var(--success);
+            color: var(--success);
+            display: block;
+        }
+        
+        .result.warning {
+            border-color: var(--warning);
+            color: var(--warning);
+            display: block;
+        }
+        
+        .result.danger {
+            border-color: var(--danger);
+            color: var(--danger);
+            display: block;
+        }
+        
+        .strength-meter {
+            height: 8px;
+            background: rgba(10, 10, 10, 0.8);
+            border-radius: 4px;
+            margin: 10px 0;
+            overflow: hidden;
+            border: 1px solid var(--neon-red);
+        }
+        
+        .strength-level {
+            height: 100%;
+            width: 0;
+            transition: width 0.3s ease;
+            background: linear-gradient(90deg, var(--danger), var(--warning), var(--success));
+        }
+        
+        .password-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .option-group {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: rgba(10, 10, 10, 0.6);
+            border-radius: 4px;
+            border: 1px solid var(--neon-red);
+        }
+        
+        .option-group input {
+            width: auto;
+            margin-right: 8px;
+        }
+        
+        .generated-password {
+            font-family: monospace;
+            font-size: 1.1rem;
+            padding: 15px;
+            background: rgba(10, 10, 10, 0.8);
+            border-radius: 5px;
+            margin: 15px 0;
+            word-break: break-all;
+            text-align: center;
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
+        }
+        
+        .copy-btn {
+            width: auto;
+            display: inline-block;
+            margin-top: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 0, 60, 0.1);
+            border: 1px solid var(--neon-red);
+        }
+        
+        .recommendations {
+            margin-top: 20px;
+        }
+        
+        .recommendation {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: rgba(255, 0, 60, 0.05);
+            border-left: 3px solid var(--neon-red);
+            border-radius: 3px;
+            font-size: 0.9rem;
+        }
+        
+        .language-note {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            padding: 3px;
+            background: rgba(255, 0, 60, 0.1);
+            border-radius: 2px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 15px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+        
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .password-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>АНАЛИЗАТОР УЯЗВИМОСТЕЙ И ГЕНЕРАТОР СТОЙКИХ ПАРОЛЕЙ</h1>
+        </header>
+        
+        <div class="tabs">
+            <button class="tab active" data-tab="analyzer">АНАЛИЗ ПАРОЛЯ</button>
+            <button class="tab" data-tab="generator">ГЕНЕРАТОР ПАРОЛЕЙ</button>
+        </div>
+        
+        <div class="tab-content active" id="analyzer">
+            <h2>СКАНЕР БЕЗОПАСНОСТИ ПАРОЛЕЙ</h2>
+            <p>Проверьте криптостойкость вашего пароля. Все вычисления происходят локально в вашем браузере.</p>
+            
+            <div class="form-group">
+                <label for="password-input">ВВЕДИТЕ ПАРОЛЬ ДЛЯ ДИАГНОСТИКИ:</label>
+                <div class="password-input-container">
+                    <input type="password" id="password-input" placeholder="ВВЕДИТЕ ВАШ ПАРОЛЬ">
+                    <button class="toggle-password" type="button">👁</button>
+                </div>
+            </div>
+            
+            <button id="analyze-btn">ЗАПУСТИТЬ АНАЛИЗ</button>
+            
+            <div id="analysis-result">
+                <!-- Результаты анализа будут здесь -->
+            </div>
+        </div>
+        
+        <div class="tab-content" id="generator">
+            <h2>ГЕНЕРАТОР КРИПТОСТОЙКИХ ПАРОЛЕЙ</h2>
+            <p>Создайте непробиваемый пароль для защиты ваших цифровых активов.</p>
+            
+            <div class="password-options">
+                <div class="option-group">
+                    <input type="checkbox" id="uppercase" checked>
+                    <label for="uppercase">A-Z ЗАГЛАВНЫЕ</label>
+                    <div class="language-note">Только английские буквы</div>
+                </div>
+                
+                <div class="option-group">
+                    <input type="checkbox" id="lowercase" checked>
+                    <label for="lowercase">a-z СТРОЧНЫЕ</label>
+                    <div class="language-note">Только английские буквы</div>
+                </div>
+                
+                <div class="option-group">
+                    <input type="checkbox" id="numbers" checked>
+                    <label for="numbers">0-9 ЦИФРЫ</label>
+                </div>
+                
+                <div class="option-group">
+                    <input type="checkbox" id="symbols" checked>
+                    <label for="symbols">!@#$ СИМВОЛЫ</label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="password-length">ДЛИНА ПАРОЛЯ:</label>
+                <input type="range" id="password-length" min="8" max="32" value="16">
+                <span id="length-value">16 СИМВОЛОВ</span>
+            </div>
+            
+            <div class="form-group">
+                <label for="password-pattern">ШАБЛОН ГЕНЕРАЦИИ:</label>
+                <input type="text" id="password-pattern" placeholder="СЛОВО-ЧИСЛО-СИМВОЛ">
+                <small style="color: var(--text-secondary);">Используйте: СЛОВО, ЧИСЛО, СИМВОЛ в нужном порядке</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="password-type">ТИП ПАРОЛЯ:</label>
+                <select id="password-type">
+                    <option value="random">СЛУЧАЙНЫЙ</option>
+                    <option value="memorable">ЗАПОМИНАЕМЫЙ (DICEWARE)</option>
+                    <option value="pattern">ПО ШАБЛОНУ</option>
+                </select>
+            </div>
+            
+            <button id="generate-btn">СГЕНЕРИРОВАТЬ ПАРОЛЬ</button>
+            
+            <div id="generated-password-container" style="display: none;">
+                <div class="generated-password" id="generated-password"></div>
+                <button class="copy-btn" id="copy-btn">КОПИРОВАТЬ В БУФЕР</button>
+            </div>
+        </div>
+        
+        <footer>
+            <!-- Футер оставлен пустым -->
+        </footer>
+    </div>
+
+    <script>
+        // Элементы DOM
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const passwordInput = document.getElementById('password-input');
+        const togglePasswordBtn = document.querySelector('.toggle-password');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const analysisResult = document.getElementById('analysis-result');
+        const generateBtn = document.getElementById('generate-btn');
+        const generatedPasswordContainer = document.getElementById('generated-password-container');
+        const generatedPassword = document.getElementById('generated-password');
+        const copyBtn = document.getElementById('copy-btn');
+        const passwordLength = document.getElementById('password-length');
+        const lengthValue = document.getElementById('length-value');
+        
+        // Расширенный словарь для метода Diceware
+        const dicewareWords = [
+            'амфибрахий', 'анахорет', 'анчутка', 'афедрон', 'выхухоль', 'гомоморфизм', 'даздраперма',
+            'драндулет', 'женонеистовый', 'жупел', 'капучинатор', 'козлодёр', 'кулебяка', 'многочлен',
+            'мормышка', 'мужатица', 'мужатка', 'наопако', 'ококоветь', 'пердимонокль', 'пéточить',
+            'пипидастр', 'пипин', 'поползновение', 'пюпитр', 'сопатка', 'странь', 'супря', 'сусеки',
+            'тарталетка', 'форшмак', 'хухря', 'членистоногие', 'шмакодявка', 'шпингалет', 'шуфлядка',
+            'нейрон', 'киборг', 'хакер', 'матрица', 'сингулярность', 'интерфейс', 'протокол',
+            'шифр', 'алгоритм', 'бит', 'байт', 'квант', 'фотон', 'электрон', 'процессор',
+            'сервер', 'роутер', 'модем', 'дисплей', 'клавиатура', 'чип', 'схема', 'код',
+            'вирус', 'брандмауэр', 'шифрование', 'дешифровка', 'взлом', 'защита', 'атака'
+        ];
+        
+        // Переключение между вкладками
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(tc => tc.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+        
+        // Показать/скрыть пароль
+        togglePasswordBtn.addEventListener('click', () => {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                togglePasswordBtn.textContent = '👁';
+            } else {
+                passwordInput.type = 'password';
+                togglePasswordBtn.textContent = '👁';
+            }
+        });
+        
+        // Обновление отображения длины пароля
+        passwordLength.addEventListener('input', () => {
+            lengthValue.textContent = `${passwordLength.value} СИМВОЛОВ`;
+        });
+        
+        // Анализ пароля
+        analyzeBtn.addEventListener('click', () => {
+            const password = passwordInput.value;
+            
+            if (!password) {
+                analysisResult.innerHTML = '<div class="result danger">ОШИБКА: ВВЕДИТЕ ПАРОЛЬ ДЛЯ АНАЛИЗА</div>';
+                return;
+            }
+            
+            const analysis = analyzePassword(password);
+            displayAnalysisResult(analysis);
+        });
+        
+        // Генерация пароля
+        generateBtn.addEventListener('click', () => {
+            const length = parseInt(passwordLength.value);
+            const uppercase = document.getElementById('uppercase').checked;
+            const lowercase = document.getElementById('lowercase').checked;
+            const numbers = document.getElementById('numbers').checked;
+            const symbols = document.getElementById('symbols').checked;
+            const pattern = document.getElementById('password-pattern').value;
+            const type = document.getElementById('password-type').value;
+            
+            let newPassword = '';
+            
+            if (type === 'memorable') {
+                newPassword = generateMemorablePassword();
+            } else if (type === 'pattern' && pattern) {
+                newPassword = generatePatternPassword(pattern);
+            } else {
+                newPassword = generateRandomPassword(length, uppercase, lowercase, numbers, symbols);
+            }
+            
+            generatedPassword.textContent = newPassword;
+            generatedPasswordContainer.style.display = 'block';
+        });
+        
+        // Копирование пароля в буфер обмена
+        copyBtn.addEventListener('click', () => {
+            const passwordText = generatedPassword.textContent;
+            navigator.clipboard.writeText(passwordText).then(() => {
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = 'СКОПИРОВАНО';
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                }, 2000);
+            });
+        });
+        
+        // Функция анализа пароля
+        function analyzePassword(password) {
+            let score = 0;
+            const recommendations = [];
+            const warnings = [];
+            
+            // Проверка длины
+            if (password.length < 8) {
+                score -= 2;
+                recommendations.push('УВЕЛИЧЬТЕ ДЛИНУ ПАРОЛЯ ДО 8+ СИМВОЛОВ');
+            } else if (password.length < 12) {
+                score += 1;
+                recommendations.push('ДЛЯ МАКСИМАЛЬНОЙ БЕЗОПАСНОСТИ ИСПОЛЬЗУЙТЕ 12+ СИМВОЛОВ');
+            } else {
+                score += 2;
+            }
+            
+            // Проверка на наличие заглавных букв
+            if (/[A-Z]/.test(password)) {
+                score += 1;
+            } else {
+                recommendations.push('ДОБАВЬТЕ ЗАГЛАВНЫЕ БУКВЫ');
+            }
+            
+            // Проверка на наличие строчных букв
+            if (/[a-z]/.test(password)) {
+                score += 1;
+            } else {
+                recommendations.push('ДОБАВЬТЕ СТРОЧНЫЕ БУКВЫ');
+            }
+            
+            // Проверка на наличие цифр
+            if (/\d/.test(password)) {
+                score += 1;
+            } else {
+                recommendations.push('ДОБАВЬТЕ ЦИФРЫ');
+            }
+            
+            // Проверка на наличие специальных символов
+            if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+                score += 1;
+            } else {
+                recommendations.push('ДОБАВЬТЕ СПЕЦИАЛЬНЫЕ СИМВОЛЫ (!@#$%^&*)');
+            }
+            
+            // Проверка на распространенные паттерны
+            const commonPatterns = [
+                { pattern: /123456|12345|1234/, message: 'ОБНАРУЖЕНА ЧИСЛОВАЯ ПОСЛЕДОВАТЕЛЬНОСТЬ' },
+                { pattern: /qwerty|asdfgh|zxcvbn/, message: 'ОБНАРУЖЕНА ПОСЛЕДОВАТЕЛЬНОСТЬ КЛАВИШ' },
+                { pattern: /password|parol|пароль/, message: 'ОБНАРУЖЕНО ЧАСТО ИСПОЛЬЗУЕМОЕ СЛОВО' },
+                { pattern: /(.)\1{2,}/, message: 'ОБНАРУЖЕНЫ ПОВТОРЯЮЩИЕСЯ СИМВОЛЫ' },
+                { pattern: /(abc|bcd|cde|def)/, message: 'ОБНАРУЖЕНА АЛФАВИТНАЯ ПОСЛЕДОВАТЕЛЬНОСТЬ' }
+            ];
+            
+            commonPatterns.forEach(item => {
+                if (item.pattern.test(password.toLowerCase())) {
+                    score -= 2;
+                    warnings.push(item.message);
+                }
+            });
+            
+            // Расчет времени взлома
+            const charsetSize = calculateCharsetSize(password);
+            const possibleCombinations = Math.pow(charsetSize, password.length);
+            const timeToCrack = estimateCrackTime(possibleCombinations);
+            
+            // Определение уровня стойкости
+            let strengthLevel = '';
+            let strengthClass = '';
+            
+            if (score <= 2) {
+                strengthLevel = 'КРИТИЧЕСКИ УЯЗВИМ';
+                strengthClass = 'danger';
+            } else if (score <= 4) {
+                strengthLevel = 'НИЗКАЯ СТОЙКОСТЬ';
+                strengthClass = 'warning';
+            } else if (score <= 6) {
+                strengthLevel = 'СРЕДНЯЯ СТОЙКОСТЬ';
+                strengthClass = 'warning';
+            } else {
+                strengthLevel = 'ВЫСОКАЯ СТОЙКОСТЬ';
+                strengthClass = 'success';
+            }
+            
+            return {
+                score,
+                strengthLevel,
+                strengthClass,
+                recommendations,
+                warnings,
+                timeToCrack,
+                length: password.length
+            };
+        }
+        
+        // Функция отображения результатов анализа
+        function displayAnalysisResult(analysis) {
+            let html = `
+                <div class="result ${analysis.strengthClass}">
+                    <h3>РЕЗУЛЬТАТ ДИАГНОСТИКИ: ${analysis.strengthLevel}</h3>
+                    <div class="strength-meter">
+                        <div class="strength-level" style="width: ${Math.max(0, analysis.score) * 12.5}%"></div>
+                    </div>
+                    <p><strong>ДЛИНА ПАРОЛЯ:</strong> ${analysis.length} СИМВОЛОВ</p>
+                    <p><strong>ПРИМЕРНОЕ ВРЕМЯ ВЗЛОМА:</strong> ${analysis.timeToCrack}</p>
+            `;
+            
+            if (analysis.warnings.length > 0) {
+                html += `<div class="recommendations"><h4>ОБНАРУЖЕНЫ УГРОЗЫ:</h4>`;
+                analysis.warnings.forEach(warning => {
+                    html += `<div class="recommendation">${warning}</div>`;
+                });
+                html += `</div>`;
+            }
+            
+            if (analysis.recommendations.length > 0) {
+                html += `<div class="recommendations"><h4>РЕКОМЕНДАЦИИ ПО УСИЛЕНИЮ:</h4>`;
+                analysis.recommendations.forEach(rec => {
+                    html += `<div class="recommendation">${rec}</div>`;
+                });
+                html += `</div>`;
+            }
+            
+            html += `</div>`;
+            
+            analysisResult.innerHTML = html;
+        }
+        
+        // Функция расчета размера набора символов
+        function calculateCharsetSize(password) {
+            let size = 0;
+            if (/[a-z]/.test(password)) size += 26;
+            if (/[A-Z]/.test(password)) size += 26;
+            if (/\d/.test(password)) size += 10;
+            if (/[^a-zA-Z0-9]/.test(password)) size += 32;
+            return size;
+        }
+        
+        // Функция оценки времени взлома
+        function estimateCrackTime(combinations) {
+            const hashesPerSecond = 1e9;
+            const seconds = combinations / hashesPerSecond;
+            
+            if (seconds < 60) return 'МЕНЕЕ МИНУТЫ';
+            if (seconds < 3600) return `${Math.round(seconds / 60)} МИНУТ`;
+            if (seconds < 86400) return `${Math.round(seconds / 3600)} ЧАСОВ`;
+            if (seconds < 31536000) return `${Math.round(seconds / 86400)} ДНЕЙ`;
+            if (seconds < 315360000) return `${Math.round(seconds / 31536000)} ЛЕТ`;
+            return 'СОТНИ ЛЕТ';
+        }
+        
+        // Функция генерации случайного пароля
+        function generateRandomPassword(length, uppercase, lowercase, numbers, symbols) {
+            let charset = '';
+            if (lowercase) charset += 'abcdefghijklmnopqrstuvwxyz';
+            if (uppercase) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            if (numbers) charset += '0123456789';
+            if (symbols) charset += '!@#$%^&*()_+-=[]{};:,.<>?';
+            
+            if (charset === '') {
+                charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+            }
+            
+            let password = '';
+            for (let i = 0; i < length; i++) {
+                const randomIndex = Math.floor(Math.random() * charset.length);
+                password += charset[randomIndex];
+            }
+            
+            return password;
+        }
+        
+        // Функция генерации запоминаемого пароля
+        function generateMemorablePassword() {
+            let password = '';
+            const wordCount = 4;
+            
+            for (let i = 0; i < wordCount; i++) {
+                const randomIndex = Math.floor(Math.random() * dicewareWords.length);
+                password += dicewareWords[randomIndex];
+                if (i < wordCount - 1) password += '-';
+            }
+            
+            const randomNumber = Math.floor(Math.random() * 90) + 10;
+            const symbols = '!@#$%^&*';
+            const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+            
+            password += randomNumber + randomSymbol;
+            
+            return password;
+        }
+        
+        // Функция генерации пароля по шаблону
+        function generatePatternPassword(pattern) {
+            const components = pattern.split('-');
+            let password = '';
+            
+            components.forEach(component => {
+                switch(component.toUpperCase()) {
+                    case 'СЛОВО':
+                        const randomWord = dicewareWords[Math.floor(Math.random() * dicewareWords.length)];
+                        password += randomWord;
+                        break;
+                    case 'ЧИСЛО':
+                        const randomNumber = Math.floor(Math.random() * 90) + 10;
+                        password += randomNumber;
+                        break;
+                    case 'СИМВОЛ':
+                        const symbols = '!@#$%^&*';
+                        const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+                        password += randomSymbol;
+                        break;
+                    default:
+                        password += component;
+                }
+                
+                password += '-';
+            });
+            
+            return password.slice(0, -1);
+        }
+    </script>
+</body>
+</html>
