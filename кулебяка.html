@@ -207,16 +207,21 @@
         
         .option-group {
             display: flex;
-            align-items: center;
+            flex-direction: column;
             padding: 8px;
             background: rgba(10, 10, 10, 0.6);
             border-radius: 4px;
             border: 1px solid var(--neon-red);
         }
         
-        .option-group input {
-            width: auto;
-            margin-right: 8px;
+        .option-group label {
+            margin-bottom: 4px;
+        }
+        
+        .option-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-bottom: 8px;
         }
         
         .generated-password {
@@ -261,6 +266,36 @@
             padding: 3px;
             background: rgba(255, 0, 60, 0.1);
             border-radius: 2px;
+        }
+        
+        .crack-scenarios {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 5px;
+        }
+        
+        .crack-scenarios h4 {
+            color: var(--neon-red);
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+        }
+        
+        .scenario-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 0.8rem;
+            border-bottom: 1px solid rgba(255, 0, 60, 0.3);
+        }
+        
+        .scenario-name {
+            color: var(--text-secondary);
+        }
+        
+        .scenario-time {
+            font-family: monospace;
+            font-weight: bold;
         }
         
         footer {
@@ -315,9 +350,7 @@
             
             <button id="analyze-btn">ЗАПУСТИТЬ АНАЛИЗ</button>
             
-            <div id="analysis-result">
-                <!-- Результаты анализа будут здесь -->
-            </div>
+            <div id="analysis-result"></div>
         </div>
         
         <div class="tab-content" id="generator">
@@ -328,13 +361,13 @@
                 <div class="option-group">
                     <input type="checkbox" id="uppercase" checked>
                     <label for="uppercase">A-Z ЗАГЛАВНЫЕ</label>
-                    <div class="language-note">Только английские буквы</div>
+                    <div class="language-note">Английские буквы</div>
                 </div>
                 
                 <div class="option-group">
                     <input type="checkbox" id="lowercase" checked>
                     <label for="lowercase">a-z СТРОЧНЫЕ</label>
-                    <div class="language-note">Только английские буквы</div>
+                    <div class="language-note">Английские буквы</div>
                 </div>
                 
                 <div class="option-group">
@@ -377,84 +410,327 @@
             </div>
         </div>
         
-        <footer>
-            <!-- Футер оставлен пустым -->
-        </footer>
+        <footer></footer>
     </div>
 
     <script>
-        // Элементы DOM
+        // БАЗА УТЕКШИХ ПАРОЛЕЙ (топ 100+ распространенных паролей)
+        function isPasswordCompromised(password) {
+            const commonPasswords = [
+                "123456", "password", "12345678", "qwerty", "123456789", "12345", "1234", "111111",
+                "1234567", "dragon", "123123", "baseball", "abc123", "football", "monkey", "letmein",
+                "696969", "shadow", "master", "666666", "qwertyuiop", "123321", "mustang", "1234567890",
+                "michael", "654321", "superman", "1qaz2wsx", "7777777", "121212", "000000", "qazwsx",
+                "123qwe", "killer", "trustno1", "jordan", "jennifer", "zxcvbnm", "asdfgh", "hunter",
+                "buster", "soccer", "harley", "batman", "andrew", "tigger", "sunshine", "iloveyou",
+                "2000", "charlie", "robert", "thomas", "hockey", "ranger", "daniel", "starwars",
+                "klaster", "112233", "george", "computer", "michelle", "1212", "pepper", "11111",
+                "zxcvbn", "555555", "11111111", "131313", "freedom", "777777", "pass", "maggie",
+                "159753", "aaaaaa", "ginger", "princess", "joshua", "cheese", "amanda", "summer",
+                "love", "ashley", "nicole", "chelsea", "biteme", "matthew", "access", "yankees",
+                "987654321", "dallas", "austin", "thunder", "taylor", "matrix", "mobilemail",
+                "mom", "monitor", "monitoring", "montana", "moon", "moscow", "parol", "пароль", "admin"
+            ];
+            return commonPasswords.includes(password.toLowerCase());
+        }
+        
+        // Словарь для Diceware
+        const dicewareWords = [
+            'амфибрахий', 'анахорет', 'анчутка', 'выхухоль', 'гомоморфизм', 'даздраперма',
+            'драндулет', 'женонеистовый', 'жупел', 'капучинатор', 'козлодёр', 'кулебяка', 'многочлен',
+            'мормышка', 'пердимонокль', 'пипидастр', 'поползновение', 'пюпитр', 'тарталетка',
+            'форшмак', 'членистоногие', 'шмакодявка', 'шпингалет', 'шуфлядка', 'нейросеть',
+            'кибернетика', 'хакерство', 'матрица', 'сингулярность', 'интерфейс', 'протокол',
+            'шифрование', 'алгоритмизация', 'биткоин', 'байткод', 'квантум', 'фотоника', 'электроника',
+            'процессор', 'серверная', 'криптография', 'дешифратор', 'взломщик', 'защищенность',
+            'атакующий', 'безопасность', 'аутентификация', 'авторизация', 'конфиденциальность'
+        ];
+        
+        // Получение размера алфавита
+        function getCharsetSize(password) {
+            let size = 0;
+            if (/[a-z]/.test(password)) size += 26;
+            if (/[A-Z]/.test(password)) size += 26;
+            if (/[а-яё]/.test(password)) size += 33;
+            if (/[А-ЯЁ]/.test(password)) size += 33;
+            if (/\d/.test(password)) size += 10;
+            if (/[^a-zA-Zа-яА-ЯёЁ0-9]/.test(password)) size += 32;
+            return size > 0 ? size : 1;
+        }
+        
+        // Расчет энтропии
+        function calculateEntropy(password) {
+            return Math.log2(getCharsetSize(password)) * password.length;
+        }
+        
+        // Расчет времени взлома brute-force для трех сценариев
+        function estimateCrackTime(password) {
+            const L = getCharsetSize(password);
+            const N = password.length;
+            const combinations = Math.pow(L, N);
+            
+            const scenarios = [
+                { name: "ПЕРСОНАЛЬНЫЙ КОМПЬЮТЕР (GPU)", speed: 1e9 },
+                { name: "РАСПРЕДЕЛЁННАЯ СЕТЬ (БОТНЕТ)", speed: 1e12 },
+                { name: "МОЩНАЯ ХАКЕРСКАЯ ИНФРАСТРУКТУРА", speed: 1e15 }
+            ];
+            
+            function formatTime(seconds) {
+                if (seconds < 1) return "МГНОВЕННО";
+                if (seconds < 60) return `${Math.round(seconds)} СЕКУНД`;
+                if (seconds < 3600) return `${Math.round(seconds / 60)} МИНУТ`;
+                if (seconds < 86400) return `${Math.round(seconds / 3600)} ЧАСОВ`;
+                if (seconds < 2592000) return `${Math.round(seconds / 86400)} ДНЕЙ`;
+                if (seconds < 31536000) return `${Math.round(seconds / 2592000)} МЕСЯЦЕВ`;
+                if (seconds < 315360000) return `${Math.round(seconds / 31536000)} ЛЕТ`;
+                return "СОТНИ ТЫСЯЧ ЛЕТ";
+            }
+            
+            return scenarios.map(s => ({
+                name: s.name,
+                time: formatTime(combinations / s.speed)
+            }));
+        }
+        
+        // Обнаружение паттернов
+        function detectPatterns(password) {
+            const warnings = [];
+            const lower = password.toLowerCase();
+            
+            if (/123456|12345|1234|123|987654|654321/.test(password)) 
+                warnings.push('ЧИСЛОВАЯ ПОСЛЕДОВАТЕЛЬНОСТЬ');
+            if (/qwerty|йцукен|asdfgh|фывапр|zxcvbn|ячсми|1qaz/.test(lower)) 
+                warnings.push('КЛАВИАТУРНАЯ ПОСЛЕДОВАТЕЛЬНОСТЬ');
+            if (/abcdef|bcdefg|cdefgh|defghi|efghij|fghijk|ghijkl|hijklm|ijklmn|jklmno|klmnop|lmnopq|mnopqr|nopqrs|opqrst|pqrstu|qrstuv|rstuvw|stuvwx|tuvwxy|uvwxyz/.test(lower)) 
+                warnings.push('АЛФАВИТНАЯ ПОСЛЕДОВАТЕЛЬНОСТЬ');
+            if (/(.)\1{2,}/.test(password)) 
+                warnings.push('ПОВТОРЯЮЩИЕСЯ СИМВОЛЫ');
+            
+            const commonWords = ['password', 'parol', 'пароль', 'admin', 'user', 'login', 'welcome', 'master'];
+            for (const word of commonWords) {
+                if (lower.includes(word)) {
+                    warnings.push(`РАСПРОСТРАНЁННОЕ СЛОВО: ${word.toUpperCase()}`);
+                    break;
+                }
+            }
+            return warnings;
+        }
+        
+        // Основная функция анализа
+        function analyzePassword(password) {
+            let score = 5;
+            const recommendations = [];
+            let warnings = [];
+            
+            // Проверка длины
+            if (password.length < 8) {
+                score -= 3;
+                recommendations.push('УВЕЛИЧЬТЕ ДЛИНУ ДО 8+ СИМВОЛОВ');
+            } else if (password.length < 12) {
+                score += 1;
+                recommendations.push('РЕКОМЕНДУЕМАЯ ДЛИНА: 12+ СИМВОЛОВ');
+            } else if (password.length >= 16) {
+                score += 2;
+            }
+            
+            // Проверка разнообразия символов
+            let categoryCount = 0;
+            if (/[a-zа-яё]/.test(password)) categoryCount++;
+            else recommendations.push('ДОБАВЬТЕ СТРОЧНЫЕ БУКВЫ');
+            
+            if (/[A-ZА-ЯЁ]/.test(password)) categoryCount++;
+            else recommendations.push('ДОБАВЬТЕ ЗАГЛАВНЫЕ БУКВЫ');
+            
+            if (/\d/.test(password)) categoryCount++;
+            else recommendations.push('ДОБАВЬТЕ ЦИФРЫ');
+            
+            if (/[^a-zA-Zа-яА-ЯёЁ0-9]/.test(password)) categoryCount++;
+            else recommendations.push('ДОБАВЬТЕ СПЕЦИАЛЬНЫЕ СИМВОЛЫ');
+            
+            score += categoryCount;
+            
+            // Проверка по словарю утекших
+            if (isPasswordCompromised(password)) {
+                score -= 5;
+                warnings.push('КРИТИЧЕСКАЯ УГРОЗА: ПАРОЛЬ НАЙДЕН В БАЗЕ УТЕКШИХ ДАННЫХ!');
+                recommendations.push('НЕМЕДЛЕННО СМЕНИТЕ ЭТОТ ПАРОЛЬ');
+            }
+            
+            // Проверка паттернов
+            const patternWarnings = detectPatterns(password);
+            warnings = [...warnings, ...patternWarnings];
+            score -= patternWarnings.length * 2;
+            
+            // Корректировка по энтропии
+            const entropy = calculateEntropy(password);
+            if (entropy < 30) score -= 2;
+            else if (entropy < 50) score += 1;
+            else if (entropy < 70) score += 2;
+            else score += 3;
+            
+            score = Math.min(10, Math.max(0, score));
+            
+            // Время взлома
+            const crackTimes = estimateCrackTime(password);
+            
+            // Определение уровня стойкости
+            let strengthLevel, strengthClass;
+            if (isPasswordCompromised(password)) {
+                strengthLevel = 'КРИТИЧЕСКИ УЯЗВИМ (ПАРОЛЬ СКОМПРОМЕТИРОВАН)';
+                strengthClass = 'danger';
+            } else if (score <= 3) {
+                strengthLevel = 'КРИТИЧЕСКИ УЯЗВИМ';
+                strengthClass = 'danger';
+            } else if (score <= 5) {
+                strengthLevel = 'НИЗКАЯ СТОЙКОСТЬ';
+                strengthClass = 'warning';
+            } else if (score <= 7) {
+                strengthLevel = 'СРЕДНЯЯ СТОЙКОСТЬ';
+                strengthClass = 'warning';
+            } else {
+                strengthLevel = 'ВЫСОКАЯ СТОЙКОСТЬ';
+                strengthClass = 'success';
+            }
+            
+            return { score, strengthLevel, strengthClass, recommendations, warnings, 
+                     length: password.length, entropy: Math.round(entropy * 10) / 10, 
+                     charsetSize: getCharsetSize(password), crackTimes };
+        }
+        
+        // Отображение результатов
+        function displayAnalysisResult(analysis) {
+            let html = `
+                <div class="result ${analysis.strengthClass}">
+                    <h3>РЕЗУЛЬТАТ: ${analysis.strengthLevel}</h3>
+                    <div class="strength-meter">
+                        <div class="strength-level" style="width: ${analysis.score * 10}%"></div>
+                    </div>
+                    <p><strong>ДЛИНА:</strong> ${analysis.length} СИМВОЛОВ</p>
+                    <p><strong>РАЗМЕР АЛФАВИТА:</strong> ${analysis.charsetSize} СИМВОЛОВ</p>
+                    <p><strong>ЭНТРОПИЯ:</strong> ${analysis.entropy} БИТ</p>
+                    
+                    <div class="crack-scenarios">
+                        <h4>ВРЕМЯ ВЗЛОМА (BRUTE-FORCE):</h4>
+            `;
+            analysis.crackTimes.forEach(scenario => {
+                html += `<div class="scenario-item">
+                            <span class="scenario-name">${scenario.name}:</span>
+                            <span class="scenario-time">${scenario.time}</span>
+                         </div>`;
+            });
+            html += `</div>`;
+            
+            if (analysis.warnings.length > 0) {
+                html += `<div class="recommendations"><h4>ОБНАРУЖЕННЫЕ УГРОЗЫ:</h4>`;
+                analysis.warnings.forEach(w => html += `<div class="recommendation" style="border-left-color: var(--danger);">${w}</div>`);
+                html += `</div>`;
+            }
+            
+            if (analysis.recommendations.length > 0) {
+                html += `<div class="recommendations"><h4>РЕКОМЕНДАЦИИ:</h4>`;
+                analysis.recommendations.forEach(r => html += `<div class="recommendation">${r}</div>`);
+                html += `</div>`;
+            }
+            html += `</div>`;
+            analysisResult.innerHTML = html;
+        }
+        
+        // Генерация паролей (с криптографически безопасным RNG)
+        function secureRandom(max) {
+            const arr = new Uint32Array(1);
+            crypto.getRandomValues(arr);
+            return (arr[0] / (0xffffffff + 1)) * max;
+        }
+        
+        function generateRandomPassword(length, upper, lower, numbers, symbols) {
+            let charset = '';
+            if (lower) charset += 'abcdefghijklmnopqrstuvwxyz';
+            if (upper) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            if (numbers) charset += '0123456789';
+            if (symbols) charset += '!@#$%^&*()_+-=[]{};:,.<>?';
+            if (!charset) charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+            
+            let password = '';
+            for (let i = 0; i < length; i++) {
+                password += charset[Math.floor(secureRandom(charset.length))];
+            }
+            return password;
+        }
+        
+        function generateMemorablePassword() {
+            let password = '';
+            for (let i = 0; i < 5; i++) {
+                password += dicewareWords[Math.floor(secureRandom(dicewareWords.length))];
+                if (i < 4) {
+                    const r = secureRandom(1);
+                    if (r < 0.33) password += Math.floor(secureRandom(10));
+                    else if (r < 0.66) password += '!@#$%^&*'[Math.floor(secureRandom(8))];
+                    else password += '-';
+                }
+            }
+            password += Math.floor(secureRandom(900)) + 100;
+            password += '!@#$%^&*'[Math.floor(secureRandom(8))];
+            return password;
+        }
+        
+        function generatePatternPassword(pattern) {
+            const parts = pattern.split('-');
+            let result = '';
+            parts.forEach((part, i) => {
+                switch(part.toUpperCase()) {
+                    case 'СЛОВО': result += dicewareWords[Math.floor(secureRandom(dicewareWords.length))]; break;
+                    case 'ЧИСЛО': result += Math.floor(secureRandom(900)) + 100; break;
+                    case 'СИМВОЛ': result += '!@#$%^&*'[Math.floor(secureRandom(8))]; break;
+                    default: result += part;
+                }
+                if (i < parts.length - 1) result += '-';
+            });
+            return result;
+        }
+        
+        // Инициализация DOM
         const tabs = document.querySelectorAll('.tab');
         const tabContents = document.querySelectorAll('.tab-content');
         const passwordInput = document.getElementById('password-input');
-        const togglePasswordBtn = document.querySelector('.toggle-password');
+        const toggleBtn = document.querySelector('.toggle-password');
         const analyzeBtn = document.getElementById('analyze-btn');
         const analysisResult = document.getElementById('analysis-result');
         const generateBtn = document.getElementById('generate-btn');
-        const generatedPasswordContainer = document.getElementById('generated-password-container');
+        const generatedContainer = document.getElementById('generated-password-container');
         const generatedPassword = document.getElementById('generated-password');
         const copyBtn = document.getElementById('copy-btn');
-        const passwordLength = document.getElementById('password-length');
+        const lengthSlider = document.getElementById('password-length');
         const lengthValue = document.getElementById('length-value');
         
-        // Расширенный словарь для метода Diceware
-        const dicewareWords = [
-            'амфибрахий', 'анахорет', 'анчутка', 'афедрон', 'выхухоль', 'гомоморфизм', 'даздраперма',
-            'драндулет', 'женонеистовый', 'жупел', 'капучинатор', 'козлодёр', 'кулебяка', 'многочлен',
-            'мормышка', 'мужатица', 'мужатка', 'наопако', 'ококоветь', 'пердимонокль', 'пéточить',
-            'пипидастр', 'пипин', 'поползновение', 'пюпитр', 'сопатка', 'странь', 'супря', 'сусеки',
-            'тарталетка', 'форшмак', 'хухря', 'членистоногие', 'шмакодявка', 'шпингалет', 'шуфлядка',
-            'нейрон', 'киборг', 'хакер', 'матрица', 'сингулярность', 'интерфейс', 'протокол',
-            'шифр', 'алгоритм', 'бит', 'байт', 'квант', 'фотон', 'электрон', 'процессор',
-            'сервер', 'роутер', 'модем', 'дисплей', 'клавиатура', 'чип', 'схема', 'код',
-            'вирус', 'брандмауэр', 'шифрование', 'дешифровка', 'взлом', 'защита', 'атака'
-        ];
-        
-        // Переключение между вкладками
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
-                const tabId = tab.getAttribute('data-tab');
-                
+                const id = tab.dataset.tab;
                 tabs.forEach(t => t.classList.remove('active'));
                 tabContents.forEach(tc => tc.classList.remove('active'));
-                
                 tab.classList.add('active');
-                document.getElementById(tabId).classList.add('active');
+                document.getElementById(id).classList.add('active');
             });
         });
         
-        // Показать/скрыть пароль
-        togglePasswordBtn.addEventListener('click', () => {
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                togglePasswordBtn.textContent = '👁';
-            } else {
-                passwordInput.type = 'password';
-                togglePasswordBtn.textContent = '👁';
-            }
+        toggleBtn.addEventListener('click', () => {
+            passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
         });
         
-        // Обновление отображения длины пароля
-        passwordLength.addEventListener('input', () => {
-            lengthValue.textContent = `${passwordLength.value} СИМВОЛОВ`;
+        lengthSlider.addEventListener('input', () => {
+            lengthValue.textContent = `${lengthSlider.value} СИМВОЛОВ`;
         });
         
-        // Анализ пароля
         analyzeBtn.addEventListener('click', () => {
             const password = passwordInput.value;
-            
             if (!password) {
-                analysisResult.innerHTML = '<div class="result danger">ОШИБКА: ВВЕДИТЕ ПАРОЛЬ ДЛЯ АНАЛИЗА</div>';
+                analysisResult.innerHTML = '<div class="result danger">ВВЕДИТЕ ПАРОЛЬ ДЛЯ АНАЛИЗА</div>';
                 return;
             }
-            
-            const analysis = analyzePassword(password);
-            displayAnalysisResult(analysis);
+            displayAnalysisResult(analyzePassword(password));
         });
         
-        // Генерация пароля
         generateBtn.addEventListener('click', () => {
-            const length = parseInt(passwordLength.value);
+            const length = parseInt(lengthSlider.value);
             const uppercase = document.getElementById('uppercase').checked;
             const lowercase = document.getElementById('lowercase').checked;
             const numbers = document.getElementById('numbers').checked;
@@ -463,252 +739,21 @@
             const type = document.getElementById('password-type').value;
             
             let newPassword = '';
-            
-            if (type === 'memorable') {
-                newPassword = generateMemorablePassword();
-            } else if (type === 'pattern' && pattern) {
-                newPassword = generatePatternPassword(pattern);
-            } else {
-                newPassword = generateRandomPassword(length, uppercase, lowercase, numbers, symbols);
-            }
+            if (type === 'memorable') newPassword = generateMemorablePassword();
+            else if (type === 'pattern' && pattern) newPassword = generatePatternPassword(pattern);
+            else newPassword = generateRandomPassword(length, uppercase, lowercase, numbers, symbols);
             
             generatedPassword.textContent = newPassword;
-            generatedPasswordContainer.style.display = 'block';
+            generatedContainer.style.display = 'block';
         });
         
-        // Копирование пароля в буфер обмена
         copyBtn.addEventListener('click', () => {
-            const passwordText = generatedPassword.textContent;
-            navigator.clipboard.writeText(passwordText).then(() => {
-                const originalText = copyBtn.textContent;
+            navigator.clipboard.writeText(generatedPassword.textContent).then(() => {
+                const original = copyBtn.textContent;
                 copyBtn.textContent = 'СКОПИРОВАНО';
-                setTimeout(() => {
-                    copyBtn.textContent = originalText;
-                }, 2000);
+                setTimeout(() => copyBtn.textContent = original, 2000);
             });
         });
-        
-        // Функция анализа пароля
-        function analyzePassword(password) {
-            let score = 0;
-            const recommendations = [];
-            const warnings = [];
-            
-            // Проверка длины
-            if (password.length < 8) {
-                score -= 2;
-                recommendations.push('УВЕЛИЧЬТЕ ДЛИНУ ПАРОЛЯ ДО 8+ СИМВОЛОВ');
-            } else if (password.length < 12) {
-                score += 1;
-                recommendations.push('ДЛЯ МАКСИМАЛЬНОЙ БЕЗОПАСНОСТИ ИСПОЛЬЗУЙТЕ 12+ СИМВОЛОВ');
-            } else {
-                score += 2;
-            }
-            
-            // Проверка на наличие заглавных букв
-            if (/[A-Z]/.test(password)) {
-                score += 1;
-            } else {
-                recommendations.push('ДОБАВЬТЕ ЗАГЛАВНЫЕ БУКВЫ');
-            }
-            
-            // Проверка на наличие строчных букв
-            if (/[a-z]/.test(password)) {
-                score += 1;
-            } else {
-                recommendations.push('ДОБАВЬТЕ СТРОЧНЫЕ БУКВЫ');
-            }
-            
-            // Проверка на наличие цифр
-            if (/\d/.test(password)) {
-                score += 1;
-            } else {
-                recommendations.push('ДОБАВЬТЕ ЦИФРЫ');
-            }
-            
-            // Проверка на наличие специальных символов
-            if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-                score += 1;
-            } else {
-                recommendations.push('ДОБАВЬТЕ СПЕЦИАЛЬНЫЕ СИМВОЛЫ (!@#$%^&*)');
-            }
-            
-            // Проверка на распространенные паттерны
-            const commonPatterns = [
-                { pattern: /123456|12345|1234/, message: 'ОБНАРУЖЕНА ЧИСЛОВАЯ ПОСЛЕДОВАТЕЛЬНОСТЬ' },
-                { pattern: /qwerty|asdfgh|zxcvbn/, message: 'ОБНАРУЖЕНА ПОСЛЕДОВАТЕЛЬНОСТЬ КЛАВИШ' },
-                { pattern: /password|parol|пароль/, message: 'ОБНАРУЖЕНО ЧАСТО ИСПОЛЬЗУЕМОЕ СЛОВО' },
-                { pattern: /(.)\1{2,}/, message: 'ОБНАРУЖЕНЫ ПОВТОРЯЮЩИЕСЯ СИМВОЛЫ' },
-                { pattern: /(abc|bcd|cde|def)/, message: 'ОБНАРУЖЕНА АЛФАВИТНАЯ ПОСЛЕДОВАТЕЛЬНОСТЬ' }
-            ];
-            
-            commonPatterns.forEach(item => {
-                if (item.pattern.test(password.toLowerCase())) {
-                    score -= 2;
-                    warnings.push(item.message);
-                }
-            });
-            
-            // Расчет времени взлома
-            const charsetSize = calculateCharsetSize(password);
-            const possibleCombinations = Math.pow(charsetSize, password.length);
-            const timeToCrack = estimateCrackTime(possibleCombinations);
-            
-            // Определение уровня стойкости
-            let strengthLevel = '';
-            let strengthClass = '';
-            
-            if (score <= 2) {
-                strengthLevel = 'КРИТИЧЕСКИ УЯЗВИМ';
-                strengthClass = 'danger';
-            } else if (score <= 4) {
-                strengthLevel = 'НИЗКАЯ СТОЙКОСТЬ';
-                strengthClass = 'warning';
-            } else if (score <= 6) {
-                strengthLevel = 'СРЕДНЯЯ СТОЙКОСТЬ';
-                strengthClass = 'warning';
-            } else {
-                strengthLevel = 'ВЫСОКАЯ СТОЙКОСТЬ';
-                strengthClass = 'success';
-            }
-            
-            return {
-                score,
-                strengthLevel,
-                strengthClass,
-                recommendations,
-                warnings,
-                timeToCrack,
-                length: password.length
-            };
-        }
-        
-        // Функция отображения результатов анализа
-        function displayAnalysisResult(analysis) {
-            let html = `
-                <div class="result ${analysis.strengthClass}">
-                    <h3>РЕЗУЛЬТАТ ДИАГНОСТИКИ: ${analysis.strengthLevel}</h3>
-                    <div class="strength-meter">
-                        <div class="strength-level" style="width: ${Math.max(0, analysis.score) * 12.5}%"></div>
-                    </div>
-                    <p><strong>ДЛИНА ПАРОЛЯ:</strong> ${analysis.length} СИМВОЛОВ</p>
-                    <p><strong>ПРИМЕРНОЕ ВРЕМЯ ВЗЛОМА:</strong> ${analysis.timeToCrack}</p>
-            `;
-            
-            if (analysis.warnings.length > 0) {
-                html += `<div class="recommendations"><h4>ОБНАРУЖЕНЫ УГРОЗЫ:</h4>`;
-                analysis.warnings.forEach(warning => {
-                    html += `<div class="recommendation">${warning}</div>`;
-                });
-                html += `</div>`;
-            }
-            
-            if (analysis.recommendations.length > 0) {
-                html += `<div class="recommendations"><h4>РЕКОМЕНДАЦИИ ПО УСИЛЕНИЮ:</h4>`;
-                analysis.recommendations.forEach(rec => {
-                    html += `<div class="recommendation">${rec}</div>`;
-                });
-                html += `</div>`;
-            }
-            
-            html += `</div>`;
-            
-            analysisResult.innerHTML = html;
-        }
-        
-        // Функция расчета размера набора символов
-        function calculateCharsetSize(password) {
-            let size = 0;
-            if (/[a-z]/.test(password)) size += 26;
-            if (/[A-Z]/.test(password)) size += 26;
-            if (/\d/.test(password)) size += 10;
-            if (/[^a-zA-Z0-9]/.test(password)) size += 32;
-            return size;
-        }
-        
-        // Функция оценки времени взлома
-        function estimateCrackTime(combinations) {
-            const hashesPerSecond = 1e9;
-            const seconds = combinations / hashesPerSecond;
-            
-            if (seconds < 60) return 'МЕНЕЕ МИНУТЫ';
-            if (seconds < 3600) return `${Math.round(seconds / 60)} МИНУТ`;
-            if (seconds < 86400) return `${Math.round(seconds / 3600)} ЧАСОВ`;
-            if (seconds < 31536000) return `${Math.round(seconds / 86400)} ДНЕЙ`;
-            if (seconds < 315360000) return `${Math.round(seconds / 31536000)} ЛЕТ`;
-            return 'СОТНИ ЛЕТ';
-        }
-        
-        // Функция генерации случайного пароля
-        function generateRandomPassword(length, uppercase, lowercase, numbers, symbols) {
-            let charset = '';
-            if (lowercase) charset += 'abcdefghijklmnopqrstuvwxyz';
-            if (uppercase) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            if (numbers) charset += '0123456789';
-            if (symbols) charset += '!@#$%^&*()_+-=[]{};:,.<>?';
-            
-            if (charset === '') {
-                charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-            }
-            
-            let password = '';
-            for (let i = 0; i < length; i++) {
-                const randomIndex = Math.floor(Math.random() * charset.length);
-                password += charset[randomIndex];
-            }
-            
-            return password;
-        }
-        
-        // Функция генерации запоминаемого пароля
-        function generateMemorablePassword() {
-            let password = '';
-            const wordCount = 4;
-            
-            for (let i = 0; i < wordCount; i++) {
-                const randomIndex = Math.floor(Math.random() * dicewareWords.length);
-                password += dicewareWords[randomIndex];
-                if (i < wordCount - 1) password += '-';
-            }
-            
-            const randomNumber = Math.floor(Math.random() * 90) + 10;
-            const symbols = '!@#$%^&*';
-            const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
-            
-            password += randomNumber + randomSymbol;
-            
-            return password;
-        }
-        
-        // Функция генерации пароля по шаблону
-        function generatePatternPassword(pattern) {
-            const components = pattern.split('-');
-            let password = '';
-            
-            components.forEach(component => {
-                switch(component.toUpperCase()) {
-                    case 'СЛОВО':
-                        const randomWord = dicewareWords[Math.floor(Math.random() * dicewareWords.length)];
-                        password += randomWord;
-                        break;
-                    case 'ЧИСЛО':
-                        const randomNumber = Math.floor(Math.random() * 90) + 10;
-                        password += randomNumber;
-                        break;
-                    case 'СИМВОЛ':
-                        const symbols = '!@#$%^&*';
-                        const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
-                        password += randomSymbol;
-                        break;
-                    default:
-                        password += component;
-                }
-                
-                password += '-';
-            });
-            
-            return password.slice(0, -1);
-        }
     </script>
 </body>
 </html>
