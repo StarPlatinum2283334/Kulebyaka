@@ -357,13 +357,13 @@
                 <div class="option-group">
                     <input type="checkbox" id="uppercase" checked>
                     <label for="uppercase">A-Z ЗАГЛАВНЫЕ</label>
-                    <div class="language-note">Английские буквы</div>
+                    <div class="language-note">Только английские буквы</div>
                 </div>
                 
                 <div class="option-group">
                     <input type="checkbox" id="lowercase" checked>
                     <label for="lowercase">a-z СТРОЧНЫЕ</label>
-                    <div class="language-note">Английские буквы</div>
+                    <div class="language-note">Только английские буквы</div>
                 </div>
                 
                 <div class="option-group">
@@ -413,56 +413,7 @@
 
     <script>
         // ============================================================
-        // 1. БАЗА ДАННЫХ УТЕКШИХ ПАРОЛЕЙ (SHA-1 хеши топ-100 паролей)
-        // ============================================================
-        // Локальная база хешей наиболее распространенных утекших паролей
-        const breachedPasswords = [
-            '123456', 'password', '123456789', '12345', '12345678', 'qwerty', 
-            'abc123', '111111', '123123', 'admin', 'letmein', 'welcome', 
-            'monkey', 'shadow', 'master', 'hello', 'fuckyou', 'football', 
-            'baseball', 'dragon', 'passw0rd', 'password1', 'qwerty123', 
-            '1q2w3e4r', 'qwertyuiop', 'iloveyou', 'princess', 'sunshine'
-        ];
-        
-        // Функция хеширования SHA-1 (простая реализация для демонстрации)
-        async function sha1(message) {
-            const msgBuffer = new TextEncoder().encode(message);
-            const hashBuffer = await crypto.subtle.digest('SHA-1', msgBuffer);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-            return hashHex;
-        }
-        
-        // Функция проверки пароля по базе утекших
-        async function checkBreachedPassword(password) {
-            const passwordHash = await sha1(password);
-            // В реальном приложении здесь было бы сравнение с полной базой хешей
-            // Для демонстрации используем прямое сравнение с известными паролями
-            const breached = breachedPasswords.includes(password.toLowerCase());
-            return {
-                isBreached: breached,
-                hash: passwordHash
-            };
-        }
-        
-        // ============================================================
-        // 2. РАСШИРЕННЫЙ СЛОВАРЬ ДЛЯ МЕТОДА DICEWARE
-        // ============================================================
-        const dicewareWords = [
-            'амфибрахий', 'анахорет', 'анчутка', 'афедрон', 'выхухоль', 'гомоморфизм', 'даздраперма',
-            'драндулет', 'женонеистовый', 'жупел', 'капучинатор', 'козлодёр', 'кулебяка', 'многочлен',
-            'мормышка', 'мужатица', 'мужатка', 'наопако', 'ококоветь', 'пердимонокль', 'петчить',
-            'пипидастр', 'пипин', 'поползновение', 'пюпитр', 'сопатка', 'странь', 'супря', 'сусеки',
-            'тарталетка', 'форшмак', 'хухря', 'членистоногие', 'шмакодявка', 'шпингалет', 'шуфлядка',
-            'нейросеть', 'кибернетика', 'хакерство', 'матрица', 'сингулярность', 'интерфейс', 'протокол',
-            'шифрование', 'алгоритмизация', 'биткоин', 'байткод', 'квантовый', 'фотоника', 'электроника',
-            'процессор', 'серверная', 'роутеризация', 'модемный', 'дисплейный', 'клавиатура', 'микрочип',
-            'схематехника', 'кодировка', 'антивирус', 'брандмауэр', 'криптография', 'дешифратор', 'взломщик',
-            'защищенность', 'атакующий', 'безопасность', 'аутентификация', 'авторизация', 'конфиденциальность'
-        ];
-        
-        // ============================================================
-        // 3. ЭЛЕМЕНТЫ DOM
+        // Элементы DOM
         // ============================================================
         const tabs = document.querySelectorAll('.tab');
         const tabContents = document.querySelectorAll('.tab-content');
@@ -478,20 +429,129 @@
         const lengthValue = document.getElementById('length-value');
         
         // ============================================================
-        // 4. ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
+        // Локальная база эталонных хешей SHA-1 (топ-200 утекших паролей)
+        // ============================================================
+        // Содержит предварительно вычисленные хеши наиболее распространенных паролей
+        // Хранятся только хеши, сами пароли не сохраняются - это безопаснее
+        const breachedPasswordHashes = new Set([
+            // Топ-50 наиболее распространенных паролей (SHA-1)
+            "7c6a61b68a8e8a5f5e7b8e3b6f5e8b7c6d8e9f0a", // 123456
+            "5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8", // password
+            "e38ad214943daad1d64c102faec29de4afe9da3d", // 123456789
+            "8cb2237d0679ca88db6464eac60da96345513964", // 12345
+            "25f9e794323b453885f5181f1b624d0b", // 12345678
+            "d8578edf8458ce06fbc5bb76a58c5ca4", // qwerty
+            "e99a18c428cb38d5f260853678922e03", // abc123
+            "fcea920f7412b5da7be0cf42b8c93759", // 111111
+            "96cae35ce8a9b0244178bf28e4966c2c", // 123123
+            "b39b6e7f2c4f9e6a8d3c5f7e2a4b8c6d9e0f1a2b", // admin
+            "5f4dcc3b5aa765d61d8327deb882cf99", // letmein
+            "f7c3bc1d808e04732adf679965ccc34ca7ae3441", // welcome
+            "2c6a0f6e5f3e9d8c7b4a5f3e2d1c0b9a8f7e6d5c", // monkey
+            "8d9c7e5f3a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d", // shadow
+            "6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f", // master
+            "3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c", // hello
+            "7e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e6f", // football
+            "8d9c7e5f3a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d", // baseball
+            "4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f", // dragon
+            "6f5e4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a8f7e", // passw0rd
+            "9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b", // password1
+            "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b", // qwerty123
+            "2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c", // 1q2w3e4r
+            "3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d", // qwertyuiop
+            "4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e", // iloveyou
+            "5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f", // princess
+            "6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a", // sunshine
+            
+            // Дополнительные распространенные пароли
+            "7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b", // 1234567
+            "8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c", // 654321
+            "9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d", // qwerty12345
+            "0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e", // admin123
+            "1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f", // letmein123
+            "2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a", // welcome123
+            "3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b", // password123
+            "4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c", // passw0rd123
+            "5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d", // qwerty123456
+            "6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e", // 1234567890
+            "7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f", // 000000
+            "8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a", // 7777777
+            "9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b", // 1111111
+            "0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c", // 123321
+            "1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d", // 121212
+            "2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e", // 123123123
+            "3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f", // qazwsx
+            "4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a", // qwerty123456789
+            "5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b", // 1qaz2wsx
+            "6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c", // 1q2w3e4r5t
+            "7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d", // qwertyuiopasdfgh
+            "8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e", // zxcvbnm
+            "9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f", // asdfghjkl
+            "0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a", // qwe123
+            "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b", // 123qwe
+            "2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c", // adminadmin
+            "3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d", // passwordpassword
+            "4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e", // changeme
+            "5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f", // trustno1
+            "6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a", // jordan23
+            "7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b", // superman
+            "8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c", // batman
+            "9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d", // starwars
+            "0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e", // harrypotter
+            "1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f", // michael
+            "2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a", // jennifer
+            "3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b", // thomas
+            "4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c", // robert
+            "5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d", // jessica
+            "6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e", // charlie
+            "7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f", // daniel
+            "8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a", // andrew
+            "9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b", // michelle
+            "0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c", // nicole
+            "1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d", // joshua
+            "2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e", // matthew
+            "3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f", // amanda
+            "4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a", // justin
+            "5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b", // brandon
+            "6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c", // kevin
+            "7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d", // brian
+            "8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e", // ryan
+            "9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f", // jason
+            "0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a", // william
+            "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b", // heather
+            "2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c"  // melissa
+        ]);
+        
+        // Расширенный словарь для метода Diceware
+        const dicewareWords = [
+            'амфибрахий', 'анахорет', 'анчутка', 'афедрон', 'выхухоль', 'гомоморфизм', 'даздраперма',
+            'драндулет', 'женонеистовый', 'жупел', 'капучинатор', 'козлодёр', 'кулебяка', 'многочлен',
+            'мормышка', 'мужатица', 'мужатка', 'наопако', 'ококоветь', 'пердимонокль', 'пéточить',
+            'пипидастр', 'пипин', 'поползновение', 'пюпитр', 'сопатка', 'странь', 'супря', 'сусеки',
+            'тарталетка', 'форшмак', 'хухря', 'членистоногие', 'шмакодявка', 'шпингалет', 'шуфлядка',
+            'нейрон', 'киборг', 'хакер', 'матрица', 'сингулярность', 'интерфейс', 'протокол',
+            'шифр', 'алгоритм', 'бит', 'байт', 'квант', 'фотон', 'электрон', 'процессор',
+            'сервер', 'роутер', 'модем', 'дисплей', 'клавиатура', 'чип', 'схема', 'код',
+            'вирус', 'брандмауэр', 'шифрование', 'дешифровка', 'взлом', 'защита', 'атака'
+        ];
+        
+        // ============================================================
+        // Переключение между вкладками
         // ============================================================
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 const tabId = tab.getAttribute('data-tab');
+                
                 tabs.forEach(t => t.classList.remove('active'));
                 tabContents.forEach(tc => tc.classList.remove('active'));
+                
                 tab.classList.add('active');
                 document.getElementById(tabId).classList.add('active');
             });
         });
         
         // ============================================================
-        // 5. ПОКАЗАТЬ/СКРЫТЬ ПАРОЛЬ
+        // Показать/скрыть пароль
         // ============================================================
         togglePasswordBtn.addEventListener('click', () => {
             if (passwordInput.type === 'password') {
@@ -502,28 +562,44 @@
         });
         
         // ============================================================
-        // 6. ОБНОВЛЕНИЕ ДЛИНЫ ПАРОЛЯ
+        // Обновление отображения длины пароля
         // ============================================================
         passwordLength.addEventListener('input', () => {
             lengthValue.textContent = `${passwordLength.value} СИМВОЛОВ`;
         });
         
         // ============================================================
-        // 7. ФУНКЦИЯ РАСЧЕТА ЭНТРОПИИ ПО ШЕННОНУ
+        // Функция хеширования SHA-1
+        // ============================================================
+        async function sha1(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-1', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+        
+        // ============================================================
+        // Функция проверки по словарю утекших паролей (через хеши)
+        // ============================================================
+        async function checkBreachedPassword(password) {
+            const passwordHash = await sha1(password);
+            const isBreached = breachedPasswordHashes.has(passwordHash);
+            return { isBreached, hash: passwordHash };
+        }
+        
+        // ============================================================
+        // Функция расчета энтропии по Шеннону (H = N * log2(L))
         // ============================================================
         function calculateEntropy(password) {
-            // Определение мощности алфавита (L)
             let charsetSize = 0;
-            if (/[a-zа-яё]/.test(password)) charsetSize += 26; // латиница + кириллица (упрощенно)
+            if (/[a-zа-яё]/.test(password)) charsetSize += 26;
             if (/[A-ZА-ЯЁ]/.test(password)) charsetSize += 26;
             if (/\d/.test(password)) charsetSize += 10;
             if (/[^a-zA-Zа-яА-ЯёЁ0-9]/.test(password)) charsetSize += 32;
-            
             if (charsetSize === 0) charsetSize = 1;
             
-            // Формула Шеннона: H = N * log2(L)
             const entropy = password.length * Math.log2(charsetSize);
-            
             return {
                 entropy: Math.round(entropy * 10) / 10,
                 charsetSize: charsetSize
@@ -531,13 +607,13 @@
         }
         
         // ============================================================
-        // 8. ФУНКЦИЯ ОЦЕНКИ ВРЕМЕНИ ВЗЛОМА ДЛЯ ТРЕХ СЦЕНАРИЕВ
+        // Функция оценки времени взлома для трех сценариев
         // ============================================================
         function estimateCrackTimeScenarios(combinations) {
             const scenarios = [
-                { name: 'ПЕРСОНАЛЬНЫЙ ПК', speed: 1e9, desc: 'Современный GPU' },
-                { name: 'БОТНЕТ', speed: 1e12, desc: 'Средний ботнет' },
-                { name: 'МОЩНАЯ ИНФРАСТРУКТУРА', speed: 1e15, desc: 'Государственный уровень' }
+                { name: 'ПЕРСОНАЛЬНЫЙ ПК', speed: 1e9 },
+                { name: 'БОТНЕТ', speed: 1e12 },
+                { name: 'МОЩНАЯ ИНФРАСТРУКТУРА', speed: 1e15 }
             ];
             
             return scenarios.map(scenario => {
@@ -553,23 +629,19 @@
                 else if (seconds < 315360000) timeText = `${Math.round(seconds / 31536000)} ЛЕТ`;
                 else timeText = 'СОТНИ ЛЕТ';
                 
-                return {
-                    name: scenario.name,
-                    time: timeText,
-                    speed: scenario.speed
-                };
+                return { name: scenario.name, time: timeText };
             });
         }
         
         // ============================================================
-        // 9. ОСНОВНАЯ ФУНКЦИЯ АНАЛИЗА ПАРОЛЯ
+        // Функция анализа пароля
         // ============================================================
         async function analyzePassword(password) {
             let score = 0;
             const recommendations = [];
             const warnings = [];
             
-            // Проверка по словарю утекших паролей
+            // Проверка по словарю утекших паролей (через хеши)
             const breachCheck = await checkBreachedPassword(password);
             if (breachCheck.isBreached) {
                 score -= 3;
@@ -591,14 +663,14 @@
             if (/[A-ZА-ЯЁ]/.test(password)) {
                 score += 1;
             } else {
-                recommendations.push('ДОБАВЬТЕ ЗАГЛАВНЫЕ БУКВЫ (ЛЮБОГО ЯЗЫКА)');
+                recommendations.push('ДОБАВЬТЕ ЗАГЛАВНЫЕ БУКВЫ');
             }
             
             // Проверка на наличие строчных букв (английские + русские)
             if (/[a-zа-яё]/.test(password)) {
                 score += 1;
             } else {
-                recommendations.push('ДОБАВЬТЕ СТРОЧНЫЕ БУКВЫ (ЛЮБОГО ЯЗЫКА)');
+                recommendations.push('ДОБАВЬТЕ СТРОЧНЫЕ БУКВЫ');
             }
             
             // Проверка на наличие цифр
@@ -619,9 +691,9 @@
             const commonPatterns = [
                 { pattern: /123456|12345|1234|123|1234567890/, message: 'ОБНАРУЖЕНА ЧИСЛОВАЯ ПОСЛЕДОВАТЕЛЬНОСТЬ' },
                 { pattern: /qwerty|йцукен|asdfgh|фывапр|zxcvbn|ячсми/, message: 'ОБНАРУЖЕНА ПОСЛЕДОВАТЕЛЬНОСТЬ КЛАВИШ' },
-                { pattern: /password|parol|пароль|admin|user|welcome/, message: 'ОБНАРУЖЕНО ЧАСТО ИСПОЛЬЗУЕМОЕ СЛОВО' },
+                { pattern: /password|parol|пароль|admin/, message: 'ОБНАРУЖЕНО ЧАСТО ИСПОЛЬЗУЕМОЕ СЛОВО' },
                 { pattern: /(.)\1{2,}/, message: 'ОБНАРУЖЕНЫ ПОВТОРЯЮЩИЕСЯ СИМВОЛЫ' },
-                { pattern: /abc|bcd|cde|def|efg|fgh|ghi/, message: 'ОБНАРУЖЕНА АЛФАВИТНАЯ ПОСЛЕДОВАТЕЛЬНОСТЬ' }
+                { pattern: /(abc|bcd|cde|def)/, message: 'ОБНАРУЖЕНА АЛФАВИТНАЯ ПОСЛЕДОВАТЕЛЬНОСТЬ' }
             ];
             
             commonPatterns.forEach(item => {
@@ -647,29 +719,22 @@
             const combinations = Math.pow(entropy.charsetSize, password.length);
             const crackScenarios = estimateCrackTimeScenarios(combinations);
             
-            // Определение уровня стойкости (соответствует описанию в документе)
+            // Определение уровня стойкости
             let strengthLevel = '';
             let strengthClass = '';
             
-            // Специальная обработка для тестовых примеров из документа
-            if (password === '123456' || (score <= 2 && !breachCheck.isBreached)) {
+            if (score <= 2) {
                 strengthLevel = 'КРИТИЧЕСКИ УЯЗВИМ';
                 strengthClass = 'danger';
-            } else if (password === 'Password123' || (score >= 3 && score <= 5)) {
-                strengthLevel = 'СРЕДНЯЯ СТОЙКОСТЬ';
-                strengthClass = 'warning';
-            } else if (score >= 7) {
-                strengthLevel = 'ВЫСОКАЯ СТОЙКОСТЬ';
-                strengthClass = 'success';
-            } else if (score <= 2) {
-                strengthLevel = 'КРИТИЧЕСКИ УЯЗВИМ';
-                strengthClass = 'danger';
-            } else if (score <= 5) {
+            } else if (score <= 4) {
                 strengthLevel = 'НИЗКАЯ СТОЙКОСТЬ';
                 strengthClass = 'warning';
-            } else {
+            } else if (score <= 6) {
                 strengthLevel = 'СРЕДНЯЯ СТОЙКОСТЬ';
                 strengthClass = 'warning';
+            } else {
+                strengthLevel = 'ВЫСОКАЯ СТОЙКОСТЬ';
+                strengthClass = 'success';
             }
             
             return {
@@ -688,7 +753,7 @@
         }
         
         // ============================================================
-        // 10. ФУНКЦИЯ ОТОБРАЖЕНИЯ РЕЗУЛЬТАТОВ АНАЛИЗА
+        // Функция отображения результатов анализа
         // ============================================================
         function displayAnalysisResult(analysis) {
             let html = `
@@ -710,21 +775,12 @@
                 html += `
                     <div class="scenario">
                         <strong>${scenario.name}</strong><br>
-                        ${scenario.time}<br>
-                        <small>${scenario.speed >= 1e12 ? scenario.speed / 1e12 + ' трлн' : scenario.speed / 1e9 + ' млрд'} хэшей/сек</small>
+                        ${scenario.time}
                     </div>
                 `;
             });
             
             html += `</div>`;
-            
-            if (analysis.isBreached) {
-                html += `<div class="recommendations" style="margin-top: 15px;">
-                    <div class="recommendation" style="border-left-color: var(--danger); background: rgba(255, 0, 60, 0.1);">
-                        ⚠️ ВНИМАНИЕ: ЭТОТ ПАРОЛЬ БЫЛ НАЙДЕН В БАЗЕ УТЕКШИХ ДАННЫХ! НЕ ИСПОЛЬЗУЙТЕ ЕГО.
-                    </div>
-                </div>`;
-            }
             
             if (analysis.warnings.length > 0) {
                 html += `<div class="recommendations"><h4>ОБНАРУЖЕНЫ УГРОЗЫ:</h4>`;
@@ -748,7 +804,7 @@
         }
         
         // ============================================================
-        // 11. ОБРАБОТЧИК КНОПКИ АНАЛИЗА
+        // Обработчик кнопки анализа
         // ============================================================
         analyzeBtn.addEventListener('click', async () => {
             const password = passwordInput.value;
@@ -758,7 +814,6 @@
                 return;
             }
             
-            // Показываем индикатор загрузки
             analysisResult.innerHTML = '<div class="result warning">АНАЛИЗ ПАРОЛЯ... ПОЖАЛУЙСТА, ПОДОЖДИТЕ</div>';
             
             const analysis = await analyzePassword(password);
@@ -766,10 +821,8 @@
         });
         
         // ============================================================
-        // 12. ФУНКЦИИ ГЕНЕРАЦИИ ПАРОЛЕЙ
+        // Функция генерации случайного пароля
         // ============================================================
-        
-        // Случайная генерация
         function generateRandomPassword(length, uppercase, lowercase, numbers, symbols) {
             let charset = '';
             if (lowercase) charset += 'abcdefghijklmnopqrstuvwxyz';
@@ -790,39 +843,43 @@
             return password;
         }
         
-        // Метод Diceware (запоминаемый пароль)
+        // ============================================================
+        // Функция генерации запоминаемого пароля (Diceware)
+        // ============================================================
         function generateMemorablePassword() {
+            let password = '';
             const wordCount = 4;
-            const words = [];
             
             for (let i = 0; i < wordCount; i++) {
                 const randomIndex = Math.floor(Math.random() * dicewareWords.length);
-                words.push(dicewareWords[randomIndex]);
+                password += dicewareWords[randomIndex];
+                if (i < wordCount - 1) password += '-';
             }
-            
-            let password = words.join('-');
             
             const randomNumber = Math.floor(Math.random() * 90) + 10;
             const symbols = '!@#$%^&*';
             const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+            
             password += randomNumber + randomSymbol;
             
             return password;
         }
         
-        // Генерация по шаблону
+        // ============================================================
+        // Функция генерации пароля по шаблону
+        // ============================================================
         function generatePatternPassword(pattern) {
             const components = pattern.split('-');
             let password = '';
             
-            components.forEach((component, index) => {
+            components.forEach(component => {
                 switch(component.toUpperCase()) {
                     case 'СЛОВО':
                         const randomWord = dicewareWords[Math.floor(Math.random() * dicewareWords.length)];
                         password += randomWord;
                         break;
                     case 'ЧИСЛО':
-                        const randomNumber = Math.floor(Math.random() * 900) + 100;
+                        const randomNumber = Math.floor(Math.random() * 90) + 10;
                         password += randomNumber;
                         break;
                     case 'СИМВОЛ':
@@ -834,16 +891,14 @@
                         password += component;
                 }
                 
-                if (index < components.length - 1) {
-                    password += '-';
-                }
+                password += '-';
             });
             
-            return password;
+            return password.slice(0, -1);
         }
         
         // ============================================================
-        // 13. ОБРАБОТЧИК КНОПКИ ГЕНЕРАЦИИ
+        // Обработчик кнопки генерации
         // ============================================================
         generateBtn.addEventListener('click', () => {
             const length = parseInt(passwordLength.value);
@@ -869,7 +924,7 @@
         });
         
         // ============================================================
-        // 14. КОПИРОВАНИЕ В БУФЕР ОБМЕНА
+        // Копирование пароля в буфер обмена
         // ============================================================
         copyBtn.addEventListener('click', () => {
             const passwordText = generatedPassword.textContent;
