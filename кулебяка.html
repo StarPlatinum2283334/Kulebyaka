@@ -7,19 +7,102 @@
     <style>
         /* Базовые цвета и переменные */
         :root {
-            --neon-red: #ff003c;
-            --neon-green: #00ff47;
-            --neon-dark-red: #cc0030;
-            --dark-bg: #0a0a0a;
-            --darker-bg: #050505;
-            --card-bg: #1a1a1a;
-            --text-primary: #ffffff;
-            --text-secondary: #cccccc;
-            --success: #00ff47;
-            --warning: #ffaa00;
-            --danger: #ff003c;
+            --neon-red: #d4b595;
+            --neon-green: #6b8c5e;
+            --neon-dark-red: #b89a7a;
+            --dark-bg: #ffffff;
+            --darker-bg: #fefaf5;
+            --card-bg: #fefaf5;
+            --text-primary: #000000;
+            --text-secondary: #1a1a1a;
+            --success: #6b8c5e;
+            --warning: #e0a800;
+            --danger: #c95a5a;
         }
-        
+        /* Поле ввода пароля и индикатор длины — белый текст */
+#password-input,
+#length-value {
+    color: #ffffff !important;
+}
+
+/* Чтобы placeholder в поле ввода тоже был светлым (опционально) */
+#password-input::placeholder {
+    color: #cccccc;
+}
+        /* 1. Активная вкладка — контрастная бежевая */
+.tab.active {
+    color: #5a3e2b;
+    background: #f0e2d0;
+    border-bottom: 3px solid #d4b595;
+    font-weight: bold;
+}
+
+/* 2. Кнопка копирования — тёмная на светлом фоне */
+.copy-btn {
+    background: #d4b595;
+    color: #2c2c2c;
+    border: none;
+}
+.copy-btn:hover {
+    background: #b89a7a;
+    color: white;
+}
+
+/* 3. Результаты диагностики — фон + контрастный текст */
+.result {
+    background: #ffffff;
+    border-left-width: 8px;
+    padding: 18px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+/* Критически уязвимый (danger) — тёмно-красный текст на светлом фоне */
+.result.danger {
+    border-left-color: #c95a5a;
+    background: #fff5f5;
+    color: #a12525;
+}
+.result.danger h3,
+.result.danger strong,
+.result.danger h4 {
+    color: #b33b3b;
+}
+
+/* Средняя стойкость (warning) — тёмно-оранжевый/золотой */
+.result.warning {
+    border-left-color: #e0a800;
+    background: #fffaf0;
+    color: #8a6d1c;
+}
+.result.warning h3,
+.result.warning strong,
+.result.warning h4 {
+    color: #b87d00;
+}
+
+/* Высокая стойкость (success) — тёмно-зелёный */
+.result.success {
+    border-left-color: #6b8c5e;
+    background: #f0f7ed;
+    color: #2c4b1e;
+}
+.result.success h3,
+.result.success strong,
+.result.success h4 {
+    color: #3e6b2f;
+}
+
+/* Дополнительно: сценарии взлома и рекомендации должны читаться */
+.scenario {
+    background: #f9f4ec;
+    color: #2c2c2c;
+    border-color: #e5d5b3;
+}
+.recommendation {
+    background: #fef8f0;
+    color: #1e1e1e;
+    border-left-color: #d4b595;
+}
         /* Общие сбросы и глобальные стили */
         * {
             margin: 0;
@@ -169,7 +252,48 @@
             text-transform: uppercase;
             letter-spacing: 1px;
         }
-        
+        /* Сценарии взлома — гарантия читаемости */
+.crack-scenarios .scenario {
+    background: #f9f4ec;
+    color: #2c2c2c;  /* тёмный текст на светлом фоне */
+    border: 1px solid #e5d5b3;
+}
+.crack-scenarios .scenario strong {
+    color: #5a3e2b;  /* тёмно-бежевый для заголовков внутри сценариев */
+}
+.result p, .result h3, .result h4, .result div {
+    color: inherit;   /* наследует цвет от родительского .result.danger/warning/success */
+}
+/* Убираем красный/светло-красный у кнопок при фокусе и активном состоянии */
+.tab:focus,
+.tab:active,
+.copy-btn:focus,
+.copy-btn:active,
+#analyze-btn:focus,
+#analyze-btn:active,
+#generate-btn:focus,
+#generate-btn:active {
+    background: #d4b595;    /* основной бежевый */
+    color: #2c2c2c;          /* тёмный текст */
+    outline: none;
+    box-shadow: none;
+    transform: scale(0.99);  /* лёгкий эффект нажатия */
+}
+
+/* Особо для активной вкладки — сохраняем её стиль */
+.tab.active:focus,
+.tab.active:active {
+    background: #f0e2d0;
+    color: #5a3e2b;
+    border-bottom: 3px solid #d4b595;
+}
+
+/* Для кнопки копирования дополнительно */
+.copy-btn:focus,
+.copy-btn:active {
+    background: #b89a7a;
+    color: white;
+}
         button:hover {
             background: var(--neon-dark-red);
             transform: scale(1.01);
@@ -365,6 +489,67 @@
             font-size: 0.75rem;
             border-top: 1px dashed var(--neon-red);
         }
+        /* ===== ПОЛНОЕ ИСПРАВЛЕНИЕ КНОПОК И ВКЛАДОК ===== */
+
+/* Все кнопки и вкладки — никакого красного */
+.tab,
+.tab:focus,
+.tab:active,
+.tab:focus-visible,
+.tab.active,
+.tab.active:focus,
+.tab.active:active,
+.copy-btn,
+.copy-btn:focus,
+.copy-btn:active,
+.copy-btn:focus-visible,
+#analyze-btn,
+#analyze-btn:focus,
+#analyze-btn:active,
+#generate-btn,
+#generate-btn:focus,
+#generate-btn:active {
+    background: #d4b595 !important;
+    color: #2c2c2c !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Неактивные вкладки — светлее, без красного */
+.tab:not(.active) {
+    background: transparent !important;
+    color: #7d6e5d !important;
+}
+.tab:not(.active):hover {
+    background: #e8dccc !important;
+    color: #3e2c1c !important;
+}
+
+/* Активная вкладка — выделенная бежевая */
+.tab.active {
+    background: #f0e2d0 !important;
+    color: #5a3e2b !important;
+    border-bottom: 3px solid #d4b595 !important;
+}
+
+/* Кнопка копирования при наведении */
+.copy-btn:hover {
+    background: #b89a7a !important;
+    color: white !important;
+}
+
+/* Кнопки анализа и генерации при наведении */
+#analyze-btn:hover,
+#generate-btn:hover {
+    background: #b89a7a !important;
+    color: white !important;
+}
+
+/* Принудительно убираем любые красные тени или обводки */
+*:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
     </style>
 </head>
 <body>
@@ -440,8 +625,9 @@
 </div>
 
 <script>
-
-    
+    // ============================================================
+    // РАЗДЕЛ 1. ПОЛУЧЕНИЕ ЭЛЕМЕНТОВ DOM
+    // ============================================================
     const tabs = document.querySelectorAll('.tab');
     const tabContents = document.querySelectorAll('.tab-content');
     const passwordInput = document.getElementById('password-input');
@@ -461,9 +647,10 @@
     const generatedPasswordSpan = document.getElementById('generated-password');
     const copyBtn = document.getElementById('copy-btn');
 
-
-    // хещи
-    
+    // ============================================================
+    // РАЗДЕЛ 2. БАЗА УТЕКШИХ ПАРОЛЕЙ (ХЕШИ SHA-1)
+    // Содержит хеши наиболее распространённых паролей, найденных в утечках
+    // ============================================================
     const breachedHashes = new Set([
         "7c6a61b68a8e8a5f5e7b8e3b6f5e8b7c6d8e9f0a", "5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8",
         "e38ad214943daad1d64c102faec29de4afe9da3d", "8cb2237d0679ca88db6464eac60da96345513964",
@@ -472,7 +659,9 @@
         "f7c3bc1d808e04732adf679965ccc34ca7ae3441", "2c6a0f6e5f3e9d8c7b4a5f3e2d1c0b9a8f7e6d5c"
     ]);
 
-    
+    // ============================================================
+    // РАЗДЕЛ 3. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+    // ============================================================
     
     // Функция вычисления SHA-1 хеша (для проверки утечек)
     async function sha1Hash(str) {
@@ -537,8 +726,9 @@
         });
     }
     
-    // АНАЛИЗА ПАРОЛЯ
-    
+    // ============================================================
+    // РАЗДЕЛ 4. ОСНОВНАЯ ЛОГИКА АНАЛИЗА ПАРОЛЯ
+    // ============================================================
     async function analyzePasswordStrength(password) {
         if (!password) return null;
         
@@ -785,7 +975,9 @@
         });
     }
     
-    //ГЕНЕРАЦИИ ПАРОЛЕЙ 
+    // ============================================================
+    // РАЗДЕЛ 5. ЛОГИКА ГЕНЕРАЦИИ ПАРОЛЕЙ (ТОЛЬКО СЛУЧАЙНАЯ)
+    // ============================================================
     
     // Обновление отображения длины
     function updateLengthDisplay() {
@@ -857,8 +1049,9 @@
     
     generateBtn.addEventListener('click', handleGenerate);
     
-    // ПЕРЕКЛЮЧЕНИЕ МЕЖДУ ВКЛАДКАМИ
-
+    // ============================================================
+    // РАЗДЕЛ 6. ПЕРЕКЛЮЧЕНИЕ МЕЖДУ ВКЛАДКАМИ
+    // ============================================================
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
             const tabId = tab.getAttribute('data-tab');
@@ -868,6 +1061,7 @@
             document.getElementById(tabId).classList.add('active');
         });
     });
+    
 </script>
 </body>
 </html>
