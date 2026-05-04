@@ -395,12 +395,12 @@
         <div id="analysis-result"></div>
     </div>
 
-    <!-- Вкладка генерации паролей -->
+    <!-- Вкладка генерации паролей (упрощённая - только случайная генерация) -->
     <div class="tab-content" id="generator">
         <h2>Генератор паролей</h2>
-        <p>Настройте параметры и получите криптостойкий пароль.</p>
+        <p>Настройте параметры и получите криптостойкий случайный пароль.</p>
 
-        <!-- Блок выбора типов символов (как в классическом Бугагага) -->
+        <!-- Блок выбора типов символов -->
         <div class="password-options">
             <div class="option-group">
                 <input type="checkbox" id="uppercase" checked>
@@ -424,21 +424,6 @@
             <label for="password-length">Длина пароля</label>
             <input type="range" id="password-length" min="6" max="40" value="16">
             <span id="length-value">16 символов</span>
-        </div>
-
-        <div class="form-group">
-            <label for="password-pattern">Шаблон генерации</label>
-            <input type="text" id="password-pattern" placeholder="СЛОВО-ЧИСЛО-СИМВОЛ" value="СЛОВО-ЧИСЛО-СИМВОЛ">
-            <div style="color: #aaa; font-size: 0.75rem; margin-top: 5px;">Ключевые слова: СЛОВО, ЧИСЛО, СИМВОЛ (разделяйте дефисом)</div>
-        </div>
-
-        <div class="form-group">
-            <label for="password-type">Тип генерации</label>
-            <select id="password-type">
-                <option value="random">Случайный (на основе выбранных символов)</option>
-                <option value="memorable">Запоминаемый (Diceware + цифра + символ)</option>
-                <option value="pattern">По шаблону (слово/число/символ)</option>
-            </select>
         </div>
 
         <button id="generate-btn">Сгенерировать пароль</button>
@@ -472,8 +457,6 @@
     const symbolsCheck = document.getElementById('symbols');
     const passwordLengthSlider = document.getElementById('password-length');
     const lengthValueSpan = document.getElementById('length-value');
-    const patternInput = document.getElementById('password-pattern');
-    const passwordTypeSelect = document.getElementById('password-type');
     const generateBtn = document.getElementById('generate-btn');
     const generatedContainer = document.getElementById('generated-password-container');
     const generatedPasswordSpan = document.getElementById('generated-password');
@@ -491,17 +474,6 @@
         "f7c3bc1d808e04732adf679965ccc34ca7ae3441", "2c6a0f6e5f3e9d8c7b4a5f3e2d1c0b9a8f7e6d5c"
     ]);
 
-    // Словарь для метода Diceware (запоминаемые пароли)
-    const dicewareDict = [
-        'амфибрахий', 'анахорет', 'анчутка', 'афедрон', 'выхухоль', 'гомоморфизм', 'даздраперма',
-        'драндулет', 'женонеистовый', 'жупел', 'капучинатор', 'козлодёр', 'кулебяка', 'многочлен',
-        'мормышка', 'мужатица', 'наопако', 'ококоветь', 'пердимонокль', 'пёточить', 'пипидастр',
-        'пипин', 'поползновение', 'пюпитр', 'сопатка', 'странь', 'супря', 'сусеки', 'тарталетка',
-        'форшмак', 'хухря', 'членистоногие', 'шмакодявка', 'шпингалет', 'шуфлядка', 'нейрон',
-        'киборг', 'хакер', 'матрица', 'сингулярность', 'интерфейс', 'протокол', 'шифр', 'алгоритм',
-        'квант', 'фотон', 'электрон', 'процессор', 'сервер', 'брандмауэр', 'криптостойкость'
-    ];
-
     // ============================================================
     // РАЗДЕЛ 3. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
     // ============================================================
@@ -514,15 +486,38 @@
         return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
     
-    // Расчёт энтропии по Шеннону: H = L * log2(мощность алфавита)
+    // Расчёт энтропии по Шеннону с поддержкой русского алфавита
     function calculateEntropy(password) {
         let charsetSize = 0;
+        // Английские буквы
         if (/[a-z]/.test(password)) charsetSize += 26;
         if (/[A-Z]/.test(password)) charsetSize += 26;
+        // Русские буквы (включая ё)
+        if (/[а-яё]/.test(password)) charsetSize += 33;
+        if (/[А-ЯЁ]/.test(password)) charsetSize += 33;
+        // Цифры
         if (/[0-9]/.test(password)) charsetSize += 10;
-        if (/[^a-zA-Z0-9]/.test(password)) charsetSize += 32;
+        // Специальные символы (всё, что не буква и не цифра)
+        if (/[^a-zA-Zа-яА-ЯёЁ0-9]/.test(password)) charsetSize += 32;
+        
         if (charsetSize === 0) charsetSize = 1;
         return password.length * Math.log2(charsetSize);
+    }
+    
+    // Криптостойкий случайный int
+    function secureRandomInt(max) {
+        const array = new Uint32Array(1);
+        const limit = Math.floor(0xFFFFFFFF / max) * max;
+        let rand;
+        do {
+            crypto.getRandomValues(array);
+            rand = array[0];
+        } while (rand >= limit);
+        return rand % max;
+    }
+    
+    function secureRandomChar(charset) {
+        return charset[secureRandomInt(charset.length)];
     }
     
     // Оценка времени взлома для разных мощностей атакующего оборудования
@@ -575,30 +570,111 @@
             score += 2;
         }
         
-        // 4.3 Проверка на наличие различных классов символов
+        // 4.3 Проверка на наличие различных классов символов (включая русские)
         if (/[A-Z]/.test(password)) score += 1;
         else recommendations.push("Добавьте заглавные буквы A-Z.");
         
         if (/[a-z]/.test(password)) score += 1;
         else recommendations.push("Добавьте строчные буквы a-z.");
         
+        if (/[А-ЯЁ]/.test(password)) score += 1;
+        
+        if (/[а-яё]/.test(password)) score += 1;
+        
         if (/[0-9]/.test(password)) score += 1;
         else recommendations.push("Добавьте цифры.");
         
-        if (/[^a-zA-Z0-9]/.test(password)) score += 1;
+        if (/[^a-zA-Zа-яА-ЯёЁ0-9]/.test(password)) score += 1;
         else recommendations.push("Используйте специальные символы.");
         
         // 4.4 Эвристический анализ слабых паттернов
         const commonPatterns = [
-            { pattern: /12345|123456|qwerty|йцукен|password|admin/i, message: "Обнаружена простая последовательность символов." },
-            { pattern: /(.)\1{2,}/, message: "Обнаружены повторяющиеся символы, что снижает стойкость." }
+            { pattern: /password|admin|qwerty|йцукен|letmein|welcome|123456|abc123/i, message: "Обнаружен популярный пароль." },
+            { pattern: /qwer|asdf|zxcv|йцук|фыва|ячсм/i, message: "Обнаружена последовательность символов." },
+            { pattern: /(.)\1{2,}/, message: "Много повторяющихся символов." },
+            { pattern: /(.{2,})\1+/, message: "Обнаружен повторяющийся шаблон." }
         ];
+        
         commonPatterns.forEach(p => {
             if (p.pattern.test(password)) {
                 score -= 2;
                 warnings.push(p.message);
             }
         });
+        
+        // Клавиатурные паттерны (англ/рус)
+        const keyboardRows = [
+            "qwertyuiop","asdfghjkl","zxcvbnm",
+            "йцукенгшщз","фывапролдж","ячсмитьбю"
+        ];
+        
+        function buildKeyboardGraph() {
+            const graph = {};
+            keyboardRows.forEach(row => {
+                for (let i = 0; i < row.length; i++) {
+                    const c = row[i];
+                    graph[c] = graph[c] || [];
+                    if (i > 0) graph[c].push(row[i - 1]);
+                    if (i < row.length - 1) graph[c].push(row[i + 1]);
+                }
+            });
+            for (let r = 0; r < keyboardRows.length - 1; r++) {
+                const row1 = keyboardRows[r];
+                const row2 = keyboardRows[r + 1];
+                for (let i = 0; i < Math.min(row1.length, row2.length); i++) {
+                    const c1 = row1[i];
+                    const c2 = row2[i];
+                    graph[c1] = graph[c1] || [];
+                    graph[c2] = graph[c2] || [];
+                    graph[c1].push(c2);
+                    graph[c2].push(c1);
+                }
+            }
+            return graph;
+        }
+        
+        const keyboardGraph = buildKeyboardGraph();
+        
+        function detectKeyboardPattern(pwd) {
+            const p = pwd.toLowerCase();
+            let max = 1, cur = 1;
+            for (let i = 1; i < p.length; i++) {
+                if (keyboardGraph[p[i - 1]] && keyboardGraph[p[i - 1]].includes(p[i])) {
+                    cur++;
+                    max = Math.max(max, cur);
+                } else {
+                    cur = 1;
+                }
+            }
+            return max >= 4 ? max : 0;
+        }
+        
+        function detectNumericSequence(pwd) {
+            let max = 1, cur = 1;
+            for (let i = 1; i < pwd.length; i++) {
+                const a = pwd.charCodeAt(i - 1);
+                const b = pwd.charCodeAt(i);
+                if (b === a + 1 || b === a - 1) {
+                    cur++;
+                    max = Math.max(max, cur);
+                } else {
+                    cur = 1;
+                }
+            }
+            return max >= 4 ? max : 0;
+        }
+        
+        const kb = detectKeyboardPattern(password);
+        if (kb) {
+            score -= 2;
+            warnings.push("Обнаружен клавиатурный паттерн.");
+        }
+        
+        const num = detectNumericSequence(password);
+        if (num) {
+            score -= 2;
+            warnings.push("Обнаружена длинная числовая последовательность.");
+        }
         
         // 4.5 Расчёт энтропии и корректировка баллов
         const entropy = calculateEntropy(password);
@@ -613,17 +689,14 @@
             strengthLevel = "Критически уязвимый";
             strengthClass = "danger";
         } else if (score <= 5) {
-            strengthLevel = "Низкая или средняя стойкость";
+            strengthLevel = "Средняя стойкость";
             strengthClass = "warning";
         } else {
             strengthLevel = "Высокая стойкость";
             strengthClass = "success";
         }
         
-        // Нормализация баллов в диапазон 0-8
         const finalScore = Math.min(8, Math.max(0, score));
-        
-        // Оценка сценариев взлома
         const crackScenarios = estimateCrackScenarios(combinations);
         
         return {
@@ -718,7 +791,7 @@
     }
     
     // ============================================================
-    // РАЗДЕЛ 5. ЛОГИКА ГЕНЕРАЦИИ ПАРОЛЕЙ
+    // РАЗДЕЛ 5. ЛОГИКА ГЕНЕРАЦИИ ПАРОЛЕЙ (ТОЛЬКО СЛУЧАЙНАЯ)
     // ============================================================
     
     // Обновление отображения длины
@@ -739,69 +812,40 @@
         return charset;
     }
     
-    // Генерация случайного пароля из выбранных символов
+    // Генерация случайного пароля из выбранных символов (криптостойкая)
     function generateRandomPassword() {
         const length = parseInt(passwordLengthSlider.value);
-        const charset = getCharacterSet();
-        let result = '';
-        for (let i = 0; i < length; i++) {
-            const randomIndex = Math.floor(Math.random() * charset.length);
-            result += charset[randomIndex];
+        let passwordChars = [];
+        
+        const sets = [];
+        if (lowercaseCheck.checked) sets.push('abcdefghijklmnopqrstuvwxyz');
+        if (uppercaseCheck.checked) sets.push('ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+        if (numbersCheck.checked) sets.push('0123456789');
+        if (symbolsCheck.checked) sets.push('!@#$%^&*()_+-=[]{};:,.<>?');
+        
+        if (sets.length === 0) {
+            sets.push('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*');
         }
-        return result;
+        
+        sets.forEach(set => {
+            passwordChars.push(secureRandomChar(set));
+        });
+        
+        const allChars = sets.join('');
+        while (passwordChars.length < length) {
+            passwordChars.push(secureRandomChar(allChars));
+        }
+        
+        for (let i = passwordChars.length - 1; i > 0; i--) {
+            const j = secureRandomInt(i + 1);
+            [passwordChars[i], passwordChars[j]] = [passwordChars[j], passwordChars[i]];
+        }
+        
+        return passwordChars.join('');
     }
     
-    // Генерация запоминаемого пароля (Diceware)
-    function generateMemorablePassword() {
-        const words = [];
-        for (let i = 0; i < 4; i++) {
-            const randomIndex = Math.floor(Math.random() * dicewareDict.length);
-            words.push(dicewareDict[randomIndex]);
-        }
-        let password = words.join('-');
-        const randomNumber = Math.floor(Math.random() * 900) + 100;
-        const specials = '!@#$%^&*';
-        const randomSymbol = specials[Math.floor(Math.random() * specials.length)];
-        password += randomNumber + randomSymbol;
-        return password;
-    }
-    
-    // Генерация пароля по шаблону (СЛОВО, ЧИСЛО, СИМВОЛ)
-    function generatePatternPassword() {
-        let pattern = patternInput.value.trim();
-        if (!pattern) pattern = "СЛОВО-ЧИСЛО-СИМВОЛ";
-        const parts = pattern.split('-');
-        const resultParts = [];
-        for (let part of parts) {
-            const upperPart = part.toUpperCase();
-            if (upperPart === 'СЛОВО') {
-                const randomWord = dicewareDict[Math.floor(Math.random() * dicewareDict.length)];
-                resultParts.push(randomWord);
-            } else if (upperPart === 'ЧИСЛО') {
-                const randomNumber = Math.floor(Math.random() * 8999) + 1000;
-                resultParts.push(randomNumber);
-            } else if (upperPart === 'СИМВОЛ') {
-                const specials = '!@#$%^&*';
-                const randomSymbol = specials[Math.floor(Math.random() * specials.length)];
-                resultParts.push(randomSymbol);
-            } else {
-                resultParts.push(part);
-            }
-        }
-        return resultParts.join('-');
-    }
-    
-    // Основная функция генерации в зависимости от выбранного типа
     function handleGenerate() {
-        const type = passwordTypeSelect.value;
-        let newPassword = '';
-        if (type === 'random') {
-            newPassword = generateRandomPassword();
-        } else if (type === 'memorable') {
-            newPassword = generateMemorablePassword();
-        } else {
-            newPassword = generatePatternPassword();
-        }
+        const newPassword = generateRandomPassword();
         generatedPasswordSpan.textContent = newPassword;
         generatedContainer.style.display = 'block';
     }
