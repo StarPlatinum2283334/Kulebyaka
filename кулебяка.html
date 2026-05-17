@@ -550,6 +550,43 @@
     outline: none !important;
     box-shadow: none !important;
 }
+        /* Принудительно чёрный текст для заголовков и сообщений в рекомендациях и угрозах */
+.result .recommendations,
+.result .recommendations h4,
+.result .recommendation {
+    color: #000000 !important;
+}
+
+/* Дополнительно для списков, если понадобится */
+.result .recommendations ul,
+.result .recommendations li {
+    color: #000000 !important;
+}
+/* Чёрный текст для информационных строк в результатах */
+.result p,
+.result p strong,
+.result p span {
+    color: #000000 !important;
+}
+
+/* Если значения обёрнуты не в strong, а просто текст внутри <p> */
+.result p {
+    color: #000000 !important;
+}
+/* Чёрный текст для заголовка "Примерное время подбора" */
+.result h4,
+/* Чёрный текст для всех элементов внутри .crack-scenarios */
+.crack-scenarios,
+.crack-scenarios .scenario,
+.crack-scenarios .scenario strong,
+.crack-scenarios .scenario br,
+.crack-scenarios .scenario * {
+    color: #000000 !important;
+}
+/* Сгенерированный пароль — белый текст */
+.generated-password {
+    color: #ffffff !important;
+}
     </style>
 </head>
 <body>
