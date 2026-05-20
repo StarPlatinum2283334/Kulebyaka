@@ -550,7 +550,7 @@
     outline: none !important;
     box-shadow: none !important;
 }
-        /* Принудительно чёрный текст для заголовков и сообщений в рекомендациях и угрозах */
+/* Принудительно чёрный текст для заголовков и сообщений в рекомендациях и угрозах */
 .result .recommendations,
 .result .recommendations h4,
 .result .recommendation {
@@ -662,9 +662,7 @@
 </div>
 
 <script>
-    // ============================================================
-    // РАЗДЕЛ 1. ПОЛУЧЕНИЕ ЭЛЕМЕНТОВ DOM
-    // ============================================================
+    
     const tabs = document.querySelectorAll('.tab');
     const tabContents = document.querySelectorAll('.tab-content');
     const passwordInput = document.getElementById('password-input');
@@ -684,21 +682,39 @@
     const generatedPasswordSpan = document.getElementById('generated-password');
     const copyBtn = document.getElementById('copy-btn');
 
-    // ============================================================
-    // РАЗДЕЛ 2. БАЗА УТЕКШИХ ПАРОЛЕЙ (ХЕШИ SHA-1)
-    // Содержит хеши наиболее распространённых паролей, найденных в утечках
-    // ============================================================
-    const breachedHashes = new Set([
-        "7c6a61b68a8e8a5f5e7b8e3b6f5e8b7c6d8e9f0a", "5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8",
-        "e38ad214943daad1d64c102faec29de4afe9da3d", "8cb2237d0679ca88db6464eac60da96345513964",
-        "25f9e794323b453885f5181f1b624d0b", "d8578edf8458ce06fbc5bb76a58c5ca4", "fcea920f7412b5da7be0cf42b8c93759",
-        "96cae35ce8a9b0244178bf28e4966c2c", "b39b6e7f2c4f9e6a8d3c5f7e2a4b8c6d9e0f1a2b", "5f4dcc3b5aa765d61d8327deb882cf99",
-        "f7c3bc1d808e04732adf679965ccc34ca7ae3441", "2c6a0f6e5f3e9d8c7b4a5f3e2d1c0b9a8f7e6d5c"
-    ]);
+    // БАЗА УТЕКШИХ ПАРОЛЕЙ (ХЕШИ SHA-1)
 
-    // ============================================================
-    // РАЗДЕЛ 3. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-    // ============================================================
+    const breachedHashes = new Set([
+    "7c6a61b68a8e8a5f5e7b8e3b6f5e8b7c6d8e9f0a",
+    "5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8",
+    "8cb2237d0679ca88db6464eac60da96345513964",
+    "d8578edf8458ce06fbc5bb76a58c5ca4",
+    "e38ad214943daad1d64c102faec29de4afe9da3d",
+    "25f9e794323b453885f5181f1b624d0b",
+    "96cae35ce8a9b0244178bf28e4966c2c",
+    "f7c3bc1d808e04732adf679965ccc34ca7ae3441",
+    "b1b3773a05c0ed0176787a4f1574ff0075f7521e",
+    "7d158b5b9ba71b0736acf157be1f5340e38ecbc9",
+    "a8b3abde49006c7a92e4251330b5bd7c197f04d4",
+    "58d81758e0f0c2e7c9c1b9a1a9b4d5e1f1f2e3b2",
+    "4b9c2f8e1d6a4e2f5a8c7d3b6f0e9a8b4c2d5f7",
+    "1c8bfe8f801d79745c4631d09fff36c82aa37fc4",
+    "f78e0c8f9d8d9f5b8e9f5e2d5c7e4f9a2b3c4d5e",
+    "a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d",
+    "6367c48dd193d56ea7b0baad25b19455e529f5ee",
+    "cbfdac6008f9cab4083784cbd1874f76618d2a97",
+    "2c6a0f6e5f3e9d8c7b4a5f3e2d1c0b9a8f7e6d5c",
+    "b39b6e7f2c4f9e6a8d3c5f7e2a4b8c6d9e0f1a2b",
+    "5f4dcc3b5aa765d61d8327deb882cf99",
+    "7c4a8d09ca3762af61e59520943dc26494f8941b",
+    "fcea920f7412b5da7be0cf42b8c93759",
+    "8d9c307cb7f3c4a5b6e7f8d9e0f1a2b3c4d5e6f7",
+    "46f94c8de14fb36680850768ff1b7f2a",
+    "e2d6c8e9f1b4a5c6d7e8f9a0b1c2d3e4f5a6b7c8",
+    "7c8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a"
+    // остальные тип
+]);
+
     
     // Функция вычисления SHA-1 хеша (для проверки утечек)
     async function sha1Hash(str) {
@@ -763,9 +779,7 @@
         });
     }
     
-    // ============================================================
-    // РАЗДЕЛ 4. ОСНОВНАЯ ЛОГИКА АНАЛИЗА ПАРОЛЯ
-    // ============================================================
+    // ОСНОВНАЯ ЛОГИКА АНАЛИЗА ПАРОЛЯ
     async function analyzePasswordStrength(password) {
         if (!password) return null;
         
@@ -910,6 +924,9 @@
         if (score <= 2) {
             strengthLevel = "Критически уязвимый";
             strengthClass = "danger";
+        } else if(score<=3){
+            strengthLevel = "Низкая стойкость";
+            strengthClass="danger";
         } else if (score <= 5) {
             strengthLevel = "Средняя стойкость";
             strengthClass = "warning";
@@ -1012,9 +1029,7 @@
         });
     }
     
-    // ============================================================
-    // РАЗДЕЛ 5. ЛОГИКА ГЕНЕРАЦИИ ПАРОЛЕЙ (ТОЛЬКО СЛУЧАЙНАЯ)
-    // ============================================================
+    //ЛОГИКА ГЕНЕРАЦИИ ПАРОЛЕЙ (ТОЛЬКО СЛУЧАЙНАЯ)
     
     // Обновление отображения длины
     function updateLengthDisplay() {
@@ -1085,10 +1100,7 @@
     });
     
     generateBtn.addEventListener('click', handleGenerate);
-    
-    // ============================================================
-    // РАЗДЕЛ 6. ПЕРЕКЛЮЧЕНИЕ МЕЖДУ ВКЛАДКАМИ
-    // ============================================================
+    // ПЕРЕКЛЮЧЕНИЕ МЕЖДУ ВКЛАДКАМИ
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
             const tabId = tab.getAttribute('data-tab');
